@@ -1,0 +1,51 @@
+{
+  "name": "dt-eval-lib",
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Minimal TypeScript library for running LLM-as-a-judge evaluations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "lint": "biome check src tests",
+    "lint:fix": "biome check --write src tests",
+    "format": "biome format --write src tests",
+    "format:check": "biome format src tests"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "peerDependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "openai": "^4.73.0"
+  },
+  "peerDependenciesMeta": {
+    "openai": {
+      "optional": true
+    },
+    "@anthropic-ai/sdk": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@biomejs/biome": "2.4.9",
+    "dotenv": "^17.3.1",
+    "openai": "^4.73.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
