@@ -81,7 +81,7 @@ export ANTHROPIC_BASE_URL="https://your-proxy.example.com"
 
 Or use a `.env` file (not committed to git):
 
-```
+```bash
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_BASE_URL=https://your-proxy.example.com/v1
@@ -89,6 +89,7 @@ ANTHROPIC_BASE_URL=https://your-proxy.example.com
 ```
 
 When calling `evaluate()`, the library resolves config in this order:
+
 1. Explicit value in `provider` options (e.g., `provider.apiKey`, `provider.baseUrl`)
 2. Environment variable (`OPENAI_API_KEY`, `OPENAI_BASE_URL`, etc.)
 
