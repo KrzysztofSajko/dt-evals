@@ -160,6 +160,7 @@ dt.export(result, dataset_name="my-qa-dataset")  # optional metadata
 <summary>Framework-specific examples</summary>
 
 **Ragas:**
+
 ```python
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy
@@ -169,6 +170,7 @@ dt.export(result, dataset_name="my-qa-dataset")
 ```
 
 **DeepEval:**
+
 ```python
 from deepeval import evaluate
 from deepeval.metrics import AnswerRelevancyMetric
@@ -178,6 +180,7 @@ dt.export(result, test_run_name="my-eval")
 ```
 
 **MLflow:**
+
 ```python
 import mlflow
 
@@ -187,6 +190,7 @@ with mlflow.start_run() as run:
 ```
 
 **Langfuse:**
+
 ```python
 from langfuse import Langfuse
 
@@ -249,7 +253,7 @@ Copy `.env.example` → `.env` in the example folder and fill in your keys.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md) for internal design, module map, event schema, and transport details.
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │  User Code (Ragas · DeepEval · MLflow · Langfuse)           │
 └────────────────────────┬────────────────────────────────────┘
