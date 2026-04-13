@@ -36,6 +36,10 @@ def run_sync(coro: Any) -> T:  # type: ignore[type-var]
     thread.start()
     thread.join()
 
-    if isinstance(result, BaseException):
+    if isinstance(result, Exception):
         raise result
+    if isinstance(result, BaseException):
+        # Re-raise true BaseException types (KeyboardInterrupt, SystemExit, etc.)
+        # on the calling thread without chaining, preserving pass-through semantics.
+        raise result from None
     return result  # type: ignore[return-value]
