@@ -1,14 +1,14 @@
-"""Unit tests for dt_aiobs_ingest.langfuse.tracing."""
+"""Unit tests for dt_ai_ingest.langfuse.tracing."""
 
 from unittest.mock import MagicMock, patch
 
-from dt_aiobs_ingest.langfuse.tracing import configure_dynatrace_tracing
+from dt_ai_ingest.langfuse.tracing import configure_dynatrace_tracing
 
 
 class TestConfigureDynatraceTracing:
     def test_delegates_to_configure_tracing(self):
         """Verify it's a thin wrapper around _otel.configure_tracing."""
-        with patch("dt_aiobs_ingest.langfuse.tracing.configure_tracing") as mock_ct:
+        with patch("dt_ai_ingest.langfuse.tracing.configure_tracing") as mock_ct:
             mock_provider = MagicMock()
             mock_ct.return_value = mock_provider
 
@@ -26,7 +26,7 @@ class TestConfigureDynatraceTracing:
 
     def test_custom_service_name(self):
         """Verify custom service_name is forwarded."""
-        with patch("dt_aiobs_ingest.langfuse.tracing.configure_tracing") as mock_ct:
+        with patch("dt_ai_ingest.langfuse.tracing.configure_tracing") as mock_ct:
             mock_ct.return_value = MagicMock()
 
             configure_dynatrace_tracing(
@@ -43,7 +43,7 @@ class TestConfigureDynatraceTracing:
 
     def test_default_service_name_is_langfuse_eval(self):
         """Default service_name is 'langfuse-eval' (not 'mlflow-eval')."""
-        with patch("dt_aiobs_ingest.langfuse.tracing.configure_tracing") as mock_ct:
+        with patch("dt_ai_ingest.langfuse.tracing.configure_tracing") as mock_ct:
             mock_ct.return_value = MagicMock()
 
             configure_dynatrace_tracing(

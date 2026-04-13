@@ -1,4 +1,4 @@
-"""Tests for dt_aiobs_ingest._otel — idempotent TracerProvider setup (CORE-05)."""
+"""Tests for dt_ai_ingest._otel — idempotent TracerProvider setup (CORE-05)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
 
-from dt_aiobs_ingest._otel import _reset_configured_params, configure_tracing
+from dt_ai_ingest._otel import _reset_configured_params, configure_tracing
 
 
 @pytest.fixture(autouse=True)

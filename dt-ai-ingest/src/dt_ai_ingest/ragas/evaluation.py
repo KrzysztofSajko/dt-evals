@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from dt_aiobs_ingest._sync import run_sync
-from dt_aiobs_ingest._utils import safe_float
-from dt_aiobs_ingest.client import DynatraceClient
-from dt_aiobs_ingest.schema import build_eval_result_event
+from dt_ai_ingest._sync import run_sync
+from dt_ai_ingest._utils import safe_float
+from dt_ai_ingest.client import DynatraceClient
+from dt_ai_ingest.schema import build_eval_result_event
 
 if TYPE_CHECKING:
     import ragas
@@ -65,7 +65,7 @@ def export_ragas_results(
 
     Args:
         result:           Return value of ``ragas.evaluate()`` or ``ragas.aevaluate()``.
-        client:           Configured :class:`~dt_aiobs_ingest.client.DynatraceClient`.
+        client:           Configured :class:`~dt_ai_ingest.client.DynatraceClient`.
         dataset_name:     Human-readable dataset identifier.
         experiment_name:  Experiment or project name.  Falls back to
                           ``result.run_id`` if not provided.
@@ -73,7 +73,7 @@ def export_ragas_results(
                           instead of one per metric with mean score.
         extra:            Additional key/value pairs included in every event.
         **eval_kwargs:    Forwarded verbatim to
-                          :func:`~dt_aiobs_ingest.schema.build_eval_result_event`.
+                          :func:`~dt_ai_ingest.schema.build_eval_result_event`.
                           Use this for ``eval_type``, ``eval_method``,
                           ``scoring_format``, ``request_model``, etc.
 
@@ -81,8 +81,8 @@ def export_ragas_results(
 
         from ragas import evaluate
         from ragas.metrics import faithfulness, answer_relevancy
-        from dt_aiobs_ingest.client import DynatraceClient
-        from dt_aiobs_ingest.ragas import export_ragas_results
+        from dt_ai_ingest.client import DynatraceClient
+        from dt_ai_ingest.ragas import export_ragas_results
 
         result = evaluate(dataset, metrics=[faithfulness, answer_relevancy])
 

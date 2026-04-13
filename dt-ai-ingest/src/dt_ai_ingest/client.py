@@ -11,12 +11,12 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from dt_aiobs_ingest.auth import is_classic_token, make_auth_header
+from dt_ai_ingest.auth import is_classic_token, make_auth_header
 
 if TYPE_CHECKING:
     from opentelemetry.sdk.trace import TracerProvider
 
-    from dt_aiobs_ingest.schema import EvalEvent
+    from dt_ai_ingest.schema import EvalEvent
 
 logger = logging.getLogger(__name__)
 
@@ -316,13 +316,13 @@ class DynatraceClient:
         adapter export function:
 
         - **Ragas** ``EvaluationResult`` (has ``.scores``) →
-          :func:`~dt_aiobs_ingest.ragas.evaluation.export_ragas_results`
+          :func:`~dt_ai_ingest.ragas.evaluation.export_ragas_results`
         - **DeepEval** ``EvaluationResult`` (has ``.test_results``) →
-          :func:`~dt_aiobs_ingest.deepeval.evaluation.export_deepeval_results`
+          :func:`~dt_ai_ingest.deepeval.evaluation.export_deepeval_results`
         - **MLflow** ``EvaluationResult`` (has ``.metrics``) →
-          :func:`~dt_aiobs_ingest.mlflow.evaluation.export_evaluation_results`
+          :func:`~dt_ai_ingest.mlflow.evaluation.export_evaluation_results`
         - **Langfuse** client (has ``.api.scores``) →
-          :func:`~dt_aiobs_ingest.langfuse.evaluation.export_langfuse_scores`
+          :func:`~dt_ai_ingest.langfuse.evaluation.export_langfuse_scores`
 
         Args:
             result:    Framework result object (or Langfuse client).
@@ -334,7 +334,7 @@ class DynatraceClient:
 
         Example::
 
-            from dt_aiobs_ingest import DynatraceClient
+            from dt_ai_ingest import DynatraceClient
 
             dt = DynatraceClient(
                 tenant_url="https://<env-id>.live.dynatrace.com",
@@ -349,19 +349,19 @@ class DynatraceClient:
         """
         adapter = _detect_adapter(result)
         if adapter == "ragas":
-            from dt_aiobs_ingest.ragas.evaluation import export_ragas_results
+            from dt_ai_ingest.ragas.evaluation import export_ragas_results
 
             export_ragas_results(result, self, **kwargs)
         elif adapter == "deepeval":
-            from dt_aiobs_ingest.deepeval.evaluation import export_deepeval_results
+            from dt_ai_ingest.deepeval.evaluation import export_deepeval_results
 
             export_deepeval_results(result, self, **kwargs)
         elif adapter == "mlflow":
-            from dt_aiobs_ingest.mlflow.evaluation import export_evaluation_results
+            from dt_ai_ingest.mlflow.evaluation import export_evaluation_results
 
             export_evaluation_results(result, self, **kwargs)
         elif adapter == "langfuse":
-            from dt_aiobs_ingest.langfuse.evaluation import export_langfuse_scores
+            from dt_ai_ingest.langfuse.evaluation import export_langfuse_scores
 
             export_langfuse_scores(result, self, **kwargs)
         else:
@@ -392,7 +392,7 @@ class DynatraceClient:
                            When ``None``, performs plain OTel setup.
             service_name:  ``service.name`` resource attribute. Defaults to
                            ``"mlflow-eval"`` for MLflow, ``"langfuse-eval"``
-                           for Langfuse, or ``"dt-aiobs-ingest"`` otherwise.
+                           for Langfuse, or ``"dt-ai-ingest"`` otherwise.
 
         Returns:
             The configured :class:`~opentelemetry.sdk.trace.TracerProvider`.
@@ -411,7 +411,7 @@ class DynatraceClient:
             raise ValueError("No access token set. Pass access_token= or set DT_ACCESS_TOKEN.")
 
         if framework == "mlflow":
-            from dt_aiobs_ingest.mlflow.tracing import configure_dynatrace_tracing
+            from dt_ai_ingest.mlflow.tracing import configure_dynatrace_tracing
 
             return configure_dynatrace_tracing(
                 self.tenant_url,
@@ -419,7 +419,7 @@ class DynatraceClient:
                 service_name=service_name or "mlflow-eval",
             )
         elif framework == "langfuse":
-            from dt_aiobs_ingest.langfuse.tracing import configure_dynatrace_tracing
+            from dt_ai_ingest.langfuse.tracing import configure_dynatrace_tracing
 
             return configure_dynatrace_tracing(
                 self.tenant_url,
@@ -427,12 +427,12 @@ class DynatraceClient:
                 service_name=service_name or "langfuse-eval",
             )
         else:
-            from dt_aiobs_ingest._otel import configure_tracing
+            from dt_ai_ingest._otel import configure_tracing
 
             return configure_tracing(
                 self.tenant_url,
                 self.access_token,
-                service_name=service_name or "dt-aiobs-ingest",
+                service_name=service_name or "dt-ai-ingest",
             )
 
 

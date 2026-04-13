@@ -52,7 +52,7 @@ MODEL = os.environ.get("DEEPEVAL_MODEL", "gpt-5-mini")
 from deepeval import evaluate  # noqa: E402
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric  # noqa: E402
 from deepeval.test_case import LLMTestCase  # noqa: E402
-from dt_aiobs_ingest import DynatraceClient  # noqa: E402
+from dt_ai_ingest import DynatraceClient  # noqa: E402
 
 
 # ── 1. Define test cases ─────────────────────────────────────────────────────

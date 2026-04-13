@@ -1,6 +1,6 @@
-"""Unit tests for dt_aiobs_ingest.mlflow.utils."""
+"""Unit tests for dt_ai_ingest.mlflow.utils."""
 
-from dt_aiobs_ingest.mlflow.utils import (
+from dt_ai_ingest.mlflow.utils import (
     DEFAULT_METRIC_BLOCKLIST,
     is_aggregate_metric,
     is_non_score_metric,

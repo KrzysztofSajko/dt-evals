@@ -7,7 +7,7 @@ Export [DeepEval](https://docs.confident-ai.com/) test results into Dynatrace as
 ## Install
 
 ```bash
-pip install dt-aiobs-ingest[deepeval]
+pip install dt-ai-ingest[deepeval]
 ```
 
 <details>
@@ -36,7 +36,7 @@ Run your DeepEval evaluation first, then export the already-computed results:
 from deepeval import evaluate
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric
 from deepeval.test_case import LLMTestCase
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 
 # 1. Run your evaluation
 test_cases = [

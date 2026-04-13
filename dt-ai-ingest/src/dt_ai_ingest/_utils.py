@@ -1,4 +1,4 @@
-"""Shared utility functions for dt-aiobs-ingest adapters."""
+"""Shared utility functions for dt-ai-ingest adapters."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
-"""Tests for dt_aiobs_ingest.auth."""
+"""Tests for dt_ai_ingest.auth."""
 
-from dt_aiobs_ingest.auth import is_classic_token, make_auth_header
+from dt_ai_ingest.auth import is_classic_token, make_auth_header
 
 
 class TestIsClassicToken:

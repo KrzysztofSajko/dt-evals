@@ -11,7 +11,7 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-from dt_aiobs_ingest.auth import make_auth_header
+from dt_ai_ingest.auth import make_auth_header
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ def configure_tracing(
     dt_endpoint: str,
     dt_access_token: str,
     *,
-    service_name: str = "dt-aiobs-ingest",
+    service_name: str = "dt-ai-ingest",
 ) -> TracerProvider:
     """Set up OTel tracing that exports to Dynatrace OTLP.
 

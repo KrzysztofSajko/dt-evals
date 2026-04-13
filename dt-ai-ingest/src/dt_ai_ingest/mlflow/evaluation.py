@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from dt_aiobs_ingest._sync import run_sync
-from dt_aiobs_ingest.client import DynatraceClient
-from dt_aiobs_ingest.mlflow.utils import (
+from dt_ai_ingest._sync import run_sync
+from dt_ai_ingest.client import DynatraceClient
+from dt_ai_ingest.mlflow.utils import (
     is_aggregate_metric,
     is_non_score_metric,
     normalise_metric_name,
 )
-from dt_aiobs_ingest.schema import build_eval_result_event
+from dt_ai_ingest.schema import build_eval_result_event
 
 if TYPE_CHECKING:
     # mlflow is an optional dependency; keep the import lazy for type hints only.
@@ -51,7 +51,7 @@ def export_evaluation_results(
 
     Args:
         result:            Return value of ``mlflow.evaluate()``.
-        client:            Configured :class:`~dt_aiobs_ingest.client.DynatraceClient`.
+        client:            Configured :class:`~dt_ai_ingest.client.DynatraceClient`.
         run_id:            MLflow run ID.
         experiment:        Human-readable experiment or project name.
         model_id:          Model URI or display name, e.g. ``"runs:/<run_id>/model"``.
@@ -61,13 +61,13 @@ def export_evaluation_results(
                            the built-in non-score blocklist).
         extra:             Additional key/value pairs included in every event.
         **eval_kwargs:     Forwarded verbatim to
-                           :func:`~dt_aiobs_ingest.schema.build_eval_result_event`.
+                           :func:`~dt_ai_ingest.schema.build_eval_result_event`.
 
     Example::
 
         import mlflow
-        from dt_aiobs_ingest.client import DynatraceClient
-        from dt_aiobs_ingest.mlflow.evaluation import export_evaluation_results
+        from dt_ai_ingest.client import DynatraceClient
+        from dt_ai_ingest.mlflow.evaluation import export_evaluation_results
 
         client = DynatraceClient(
             tenant_url="https://<env-id>.live.dynatrace.com",

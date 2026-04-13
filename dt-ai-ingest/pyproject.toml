@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "dt-aiobs-ingest"
+name = "dt-ai-ingest"
 version = "0.1.0"
 description = "Ingest AI observability data from evaluation frameworks into Dynatrace Grail"
 readme = "README.md"
@@ -38,7 +38,7 @@ ragas = ["ragas>=0.2.0", "datasets>=2.14.0"]
 mlflow = ["mlflow>=2.8.0", "opentelemetry-instrumentation>=0.41b0", "pandas>=1.5.0", "python-dotenv>=1.0.0"]
 langfuse = ["langfuse>=4.0.0"]
 deepeval = ["deepeval>=3.0.0"]
-all = ["dt-aiobs-ingest[ragas,mlflow,langfuse,deepeval]"]
+all = ["dt-ai-ingest[ragas,mlflow,langfuse,deepeval]"]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
@@ -47,12 +47,12 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/dynatrace-oss/dt-aiobs-ingest"
-Repository = "https://github.com/dynatrace-oss/dt-aiobs-ingest"
-Issues = "https://github.com/dynatrace-oss/dt-aiobs-ingest/issues"
+Homepage = "https://github.com/dynatrace-oss/dt-ai-ingest"
+Repository = "https://github.com/dynatrace-oss/dt-ai-ingest"
+Issues = "https://github.com/dynatrace-oss/dt-ai-ingest/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/dt_aiobs_ingest"]
+packages = ["src/dt_ai_ingest"]
 
 [tool.ruff]
 target-version = "py310"

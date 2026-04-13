@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from dt_aiobs_ingest._sync import run_sync
-from dt_aiobs_ingest._utils import safe_float
-from dt_aiobs_ingest.client import DynatraceClient
-from dt_aiobs_ingest.schema import build_eval_result_event
+from dt_ai_ingest._sync import run_sync
+from dt_ai_ingest._utils import safe_float
+from dt_ai_ingest.client import DynatraceClient
+from dt_ai_ingest.schema import build_eval_result_event
 
 if TYPE_CHECKING:
     from deepeval.evaluate.types import EvaluationResult
@@ -33,12 +33,12 @@ def export_deepeval_results(
 
     Args:
         result:         Return value of ``deepeval.evaluate()``.
-        client:         Configured :class:`~dt_aiobs_ingest.client.DynatraceClient`.
+        client:         Configured :class:`~dt_ai_ingest.client.DynatraceClient`.
         test_run_name:  Human-readable name for this test run.
         dataset_name:   Dataset identifier.
         extra:          Additional key/value pairs included in every event.
         **eval_kwargs:  Forwarded verbatim to
-                        :func:`~dt_aiobs_ingest.schema.build_eval_result_event`.
+                        :func:`~dt_ai_ingest.schema.build_eval_result_event`.
                         Use this for ``eval_type``, ``eval_method``,
                         ``scoring_format``, ``request_model``, etc.
 
@@ -47,8 +47,8 @@ def export_deepeval_results(
         from deepeval import evaluate
         from deepeval.metrics import AnswerRelevancyMetric
         from deepeval.test_case import LLMTestCase
-        from dt_aiobs_ingest.client import DynatraceClient
-        from dt_aiobs_ingest.deepeval import export_deepeval_results
+        from dt_ai_ingest.client import DynatraceClient
+        from dt_ai_ingest.deepeval import export_deepeval_results
 
         test_case = LLMTestCase(input="...", actual_output="...")
         result = evaluate([test_case], [AnswerRelevancyMetric()])

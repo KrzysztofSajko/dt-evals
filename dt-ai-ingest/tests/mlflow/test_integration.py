@@ -30,9 +30,9 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from dt_aiobs_ingest.auth import make_auth_header
-from dt_aiobs_ingest.client import DynatraceClient
-from dt_aiobs_ingest.mlflow.evaluation import export_evaluation_results
+from dt_ai_ingest.auth import make_auth_header
+from dt_ai_ingest.client import DynatraceClient
+from dt_ai_ingest.mlflow.evaluation import export_evaluation_results
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -158,7 +158,7 @@ class TestTracesIntegration:
         """Full round-trip: export MLflow OTel spans → query them in Grail."""
         import mlflow
 
-        from dt_aiobs_ingest.mlflow.tracing import configure_dynatrace_tracing
+        from dt_ai_ingest.mlflow.tracing import configure_dynatrace_tracing
 
         # Unique service name so we only find our own spans
         test_service = f"integration-test-{uuid.uuid4().hex[:8]}"

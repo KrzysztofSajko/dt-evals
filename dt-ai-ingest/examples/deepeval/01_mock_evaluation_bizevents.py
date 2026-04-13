@@ -41,7 +41,7 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).with_name(".env"))
 
-from dt_aiobs_ingest import DynatraceClient  # noqa: E402
+from dt_ai_ingest import DynatraceClient  # noqa: E402
 
 DT_ENDPOINT = os.environ["DT_ENDPOINT"]
 DT_ACCESS_TOKEN = os.environ["DT_ACCESS_TOKEN"]

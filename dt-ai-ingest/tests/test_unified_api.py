@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from dt_aiobs_ingest.client import DynatraceClient, _detect_adapter
+from dt_ai_ingest.client import DynatraceClient, _detect_adapter
 
 
 # ---------------------------------------------------------------------------
@@ -343,14 +343,14 @@ class TestConfigureTracing:
             access_token="dt0c01.test",
         )
 
-        with patch("dt_aiobs_ingest._otel.configure_tracing") as mock_ct:
+        with patch("dt_ai_ingest._otel.configure_tracing") as mock_ct:
             mock_ct.return_value = MagicMock()
             provider = client.configure_tracing()
 
         mock_ct.assert_called_once_with(
             "https://test.live.dynatrace.com",
             "dt0c01.test",
-            service_name="dt-aiobs-ingest",
+            service_name="dt-ai-ingest",
         )
 
     def test_configure_tracing_mlflow(self):
@@ -360,7 +360,7 @@ class TestConfigureTracing:
             access_token="dt0c01.test",
         )
 
-        with patch("dt_aiobs_ingest.mlflow.tracing.configure_dynatrace_tracing") as mock_ct:
+        with patch("dt_ai_ingest.mlflow.tracing.configure_dynatrace_tracing") as mock_ct:
             mock_ct.return_value = MagicMock()
             provider = client.configure_tracing(framework="mlflow")
 
@@ -377,7 +377,7 @@ class TestConfigureTracing:
             access_token="dt0c01.test",
         )
 
-        with patch("dt_aiobs_ingest.langfuse.tracing.configure_dynatrace_tracing") as mock_ct:
+        with patch("dt_ai_ingest.langfuse.tracing.configure_dynatrace_tracing") as mock_ct:
             mock_ct.return_value = MagicMock()
             provider = client.configure_tracing(framework="langfuse")
 
@@ -394,7 +394,7 @@ class TestConfigureTracing:
             access_token="dt0c01.test",
         )
 
-        with patch("dt_aiobs_ingest.mlflow.tracing.configure_dynatrace_tracing") as mock_ct:
+        with patch("dt_ai_ingest.mlflow.tracing.configure_dynatrace_tracing") as mock_ct:
             mock_ct.return_value = MagicMock()
             provider = client.configure_tracing(framework="mlflow", service_name="my-service")
 

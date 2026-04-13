@@ -1,4 +1,4 @@
-"""Unit tests for dt_aiobs_ingest.ragas.evaluation."""
+"""Unit tests for dt_ai_ingest.ragas.evaluation."""
 
 import asyncio
 import json
@@ -10,9 +10,9 @@ from typing import Any
 
 import pytest
 
-from dt_aiobs_ingest._utils import safe_float
-from dt_aiobs_ingest.client import DynatraceClient
-from dt_aiobs_ingest.ragas.evaluation import (
+from dt_ai_ingest._utils import safe_float
+from dt_ai_ingest.client import DynatraceClient
+from dt_ai_ingest.ragas.evaluation import (
     _aggregate_scores,
     export_ragas_results,
 )

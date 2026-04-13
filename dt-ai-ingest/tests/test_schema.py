@@ -1,9 +1,9 @@
-"""Tests for dt_aiobs_ingest.schema."""
+"""Tests for dt_ai_ingest.schema."""
 
 import pytest
 from pydantic import ValidationError
 
-from dt_aiobs_ingest.schema import EvalEvent, build_eval_result_event
+from dt_ai_ingest.schema import EvalEvent, build_eval_result_event
 
 
 class TestEvalEvent:

@@ -7,7 +7,7 @@ import os
 
 from opentelemetry.sdk.trace import TracerProvider
 
-from dt_aiobs_ingest._otel import configure_tracing
+from dt_ai_ingest._otel import configure_tracing
 
 # Track whether we already registered an atexit handler so we don't
 # register duplicates when configure_dynatrace_tracing() is called
@@ -24,7 +24,7 @@ def configure_dynatrace_tracing(
     """Set up a global OTel TracerProvider that exports to Dynatrace OTLP.
 
     **Idempotent:** Safe to call multiple times (e.g. re-running a notebook
-    cell).  The underlying :func:`~dt_aiobs_ingest._otel.configure_tracing`
+    cell).  The underlying :func:`~dt_ai_ingest._otel.configure_tracing`
     returns the existing provider on repeated calls, and this function
     registers at most one ``atexit`` handler.
 
@@ -52,7 +52,7 @@ def configure_dynatrace_tracing(
 
     Example::
 
-        from dt_aiobs_ingest.mlflow.tracing import configure_dynatrace_tracing
+        from dt_ai_ingest.mlflow.tracing import configure_dynatrace_tracing
         import mlflow
 
         configure_dynatrace_tracing(

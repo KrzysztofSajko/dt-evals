@@ -1,4 +1,4 @@
-"""Tests for dt_aiobs_ingest._sync — sync/async bridge (CORE-06)."""
+"""Tests for dt_ai_ingest._sync — sync/async bridge (CORE-06)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import asyncio
 
 import pytest
 
-from dt_aiobs_ingest._sync import run_sync
+from dt_ai_ingest._sync import run_sync
 
 
 async def _async_add(a: int, b: int) -> int:
@@ -46,7 +46,7 @@ class TestRunSync:
 
     def test_with_async_client_send(self, httpx_mock):
         """End-to-end: run_sync with DynatraceClient from inside a running loop."""
-        from dt_aiobs_ingest.client import DynatraceClient
+        from dt_ai_ingest.client import DynatraceClient
 
         httpx_mock.add_response(status_code=204)
 
@@ -71,7 +71,7 @@ class TestRunSync:
         If the httpx.AsyncClient survives across calls, its pooled connections
         reference the dead loop and the second call raises RuntimeError.
         """
-        from dt_aiobs_ingest.client import DynatraceClient
+        from dt_ai_ingest.client import DynatraceClient
 
         httpx_mock.add_response(status_code=204)
         httpx_mock.add_response(status_code=204)
@@ -95,7 +95,7 @@ class TestRunSync:
         """End-to-end: consecutive export() calls via the unified API."""
         from types import SimpleNamespace
 
-        from dt_aiobs_ingest.client import DynatraceClient
+        from dt_ai_ingest.client import DynatraceClient
 
         httpx_mock.add_response(status_code=204)
         httpx_mock.add_response(status_code=204)

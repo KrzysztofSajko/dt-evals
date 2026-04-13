@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from opentelemetry.sdk.trace import TracerProvider
 
-from dt_aiobs_ingest._otel import configure_tracing
+from dt_ai_ingest._otel import configure_tracing
 
 
 def configure_dynatrace_tracing(
@@ -37,7 +37,7 @@ def configure_dynatrace_tracing(
     Example::
 
         from langfuse import Langfuse
-        from dt_aiobs_ingest.langfuse import configure_dynatrace_tracing
+        from dt_ai_ingest.langfuse import configure_dynatrace_tracing
 
         # Order doesn't matter — both work:
         configure_dynatrace_tracing(

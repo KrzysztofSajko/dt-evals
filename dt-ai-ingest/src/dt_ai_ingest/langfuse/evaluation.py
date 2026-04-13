@@ -5,10 +5,10 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from dt_aiobs_ingest._sync import run_sync
-from dt_aiobs_ingest._utils import safe_float
-from dt_aiobs_ingest.client import DynatraceClient
-from dt_aiobs_ingest.schema import build_eval_result_event
+from dt_ai_ingest._sync import run_sync
+from dt_ai_ingest._utils import safe_float
+from dt_ai_ingest.client import DynatraceClient
+from dt_ai_ingest.schema import build_eval_result_event
 
 if TYPE_CHECKING:
     from langfuse import Langfuse
@@ -46,7 +46,7 @@ def export_langfuse_scores(
 
     Args:
         langfuse_client:  Configured :class:`~langfuse.Langfuse` instance.
-        dt_client:        Configured :class:`~dt_aiobs_ingest.client.DynatraceClient`.
+        dt_client:        Configured :class:`~dt_ai_ingest.client.DynatraceClient`.
         trace_ids:        Only export scores linked to these Langfuse trace IDs.
                           If ``None``, all scores are fetched (subject to
                           ``score_name`` filter).
@@ -55,15 +55,15 @@ def export_langfuse_scores(
                           field as ``langfuse.score_comment``.
         extra:            Additional key/value pairs included in every event.
         **eval_kwargs:    Forwarded verbatim to
-                          :func:`~dt_aiobs_ingest.schema.build_eval_result_event`.
+                          :func:`~dt_ai_ingest.schema.build_eval_result_event`.
                           Use this for ``eval_type``, ``eval_method``,
                           ``scoring_format``, ``request_model``, etc.
 
     Example::
 
         from langfuse import Langfuse
-        from dt_aiobs_ingest.client import DynatraceClient
-        from dt_aiobs_ingest.langfuse import export_langfuse_scores
+        from dt_ai_ingest.client import DynatraceClient
+        from dt_ai_ingest.langfuse import export_langfuse_scores
 
         langfuse = Langfuse()
         dt = DynatraceClient(
@@ -287,7 +287,7 @@ def _build_manual_event(
     missing a value, where ``build_eval_result_event()`` can't be used
     because it requires ``score_value``.
     """
-    from dt_aiobs_ingest.schema import _EVAL_RESULT_FIELD_MAP
+    from dt_ai_ingest.schema import _EVAL_RESULT_FIELD_MAP
 
     event: dict[str, Any] = {"event.type": "gen_ai.evaluation.result"}
     event["gen_ai.evaluation.name"] = name

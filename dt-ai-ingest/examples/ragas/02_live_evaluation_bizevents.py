@@ -48,7 +48,7 @@ from ragas import EvaluationDataset, SingleTurnSample, evaluate  # noqa: E402
 from ragas.llms import LangchainLLMWrapper  # noqa: E402
 from ragas.metrics import Faithfulness, ResponseRelevancy  # noqa: E402
 
-from dt_aiobs_ingest import DynatraceClient  # noqa: E402
+from dt_ai_ingest import DynatraceClient  # noqa: E402
 
 # ── 1. Configure LLM for Ragas ───────────────────────────────────────────────
 

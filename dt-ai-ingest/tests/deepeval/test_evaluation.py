@@ -1,4 +1,4 @@
-"""Unit tests for dt_aiobs_ingest.deepeval.evaluation."""
+"""Unit tests for dt_ai_ingest.deepeval.evaluation."""
 
 import asyncio
 import json
@@ -8,8 +8,8 @@ from typing import Any
 
 import pytest
 
-from dt_aiobs_ingest.client import DynatraceClient
-from dt_aiobs_ingest.deepeval.evaluation import export_deepeval_results
+from dt_ai_ingest.client import DynatraceClient
+from dt_ai_ingest.deepeval.evaluation import export_deepeval_results
 
 
 def _make_metric(

@@ -1,4 +1,4 @@
-"""Unit tests for dt_aiobs_ingest.mlflow.evaluation."""
+"""Unit tests for dt_ai_ingest.mlflow.evaluation."""
 
 import asyncio
 import json
@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from dt_aiobs_ingest.client import DynatraceClient
-from dt_aiobs_ingest.mlflow.evaluation import export_evaluation_results
+from dt_ai_ingest.client import DynatraceClient
+from dt_ai_ingest.mlflow.evaluation import export_evaluation_results
 
 
 class TestExportEvaluationResults:

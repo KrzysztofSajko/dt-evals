@@ -7,7 +7,7 @@ Export [Langfuse](https://langfuse.com/) evaluation scores and execution traces 
 ## Install
 
 ```bash
-pip install dt-aiobs-ingest[langfuse]
+pip install dt-ai-ingest[langfuse]
 ```
 
 <details>
@@ -42,7 +42,7 @@ Fetch scores that already exist in Langfuse and forward them to Dynatrace as Biz
 
 ```python
 from langfuse import Langfuse
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 
 langfuse = Langfuse()
 
@@ -61,7 +61,7 @@ Langfuse v4+ is OTel-native. Call once **before** your LLM calls to route spans 
 
 ```python
 from langfuse import Langfuse
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 
 dt = DynatraceClient()
 dt.configure_tracing(framework="langfuse", service_name="my-rag-app")

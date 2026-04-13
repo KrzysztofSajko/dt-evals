@@ -1,6 +1,6 @@
 <div align="center">
 
-# dt-aiobs-ingest
+# dt-ai-ingest
 
 **Ship LLM evaluation results into Dynatrace — as BizEvents and OTel traces.**
 
@@ -15,7 +15,7 @@ One import. One client. Two methods.
 ---
 
 ```python
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 
 dt = DynatraceClient()                                  # reads DT_ENDPOINT + DT_ACCESS_TOKEN from env
 dt.export(result)                                        # ship eval scores as BizEvents
@@ -51,16 +51,16 @@ Works with **Ragas**, **DeepEval**, **MLflow**, and **Langfuse** — no OTel or 
 ## Installation
 
 ```bash
-pip install dt-aiobs-ingest[all]        # all frameworks
+pip install dt-ai-ingest[all]        # all frameworks
 ```
 
 Or pick only what you need:
 
 ```bash
-pip install dt-aiobs-ingest[ragas]      # Ragas only
-pip install dt-aiobs-ingest[deepeval]   # DeepEval only
-pip install dt-aiobs-ingest[mlflow]     # MLflow only
-pip install dt-aiobs-ingest[langfuse]   # Langfuse only
+pip install dt-ai-ingest[ragas]      # Ragas only
+pip install dt-ai-ingest[deepeval]   # DeepEval only
+pip install dt-ai-ingest[mlflow]     # MLflow only
+pip install dt-ai-ingest[langfuse]   # Langfuse only
 ```
 
 <details>
@@ -77,8 +77,8 @@ uv sync --extra all           # or --extra ragas, --extra mlflow, etc.
 **1. Set two env vars:**
 
 ```bash
-export DT_ENDPOINT=https://abc12345.live.dynatrace.com
-export DT_ACCESS_TOKEN=dt0c01.****
+export DT_ENDPOINT="https://abc12345.live.dynatrace.com"
+export DT_ACCESS_TOKEN="dt0c01.****"
 ```
 
 **2. Run your evaluation, then export:**
@@ -86,7 +86,7 @@ export DT_ACCESS_TOKEN=dt0c01.****
 ```python
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 
 result = evaluate(dataset, metrics=[faithfulness, answer_relevancy])
 
@@ -99,10 +99,23 @@ That's it. `export()` auto-detects the framework. Same pattern for DeepEval, MLf
 
 ## Prerequisites
 
-| Variable | Description |
-|---|---|
-| `DT_ENDPOINT` | Your Dynatrace environment URL, e.g. `https://abc12345.live.dynatrace.com` |
-| `DT_ACCESS_TOKEN` | A Dynatrace access token (classic `dt0c01.*` or Bearer/OAuth) |
+```bash
+# Dynatrace connection
+export DT_ENDPOINT="https://<your-env-id>.live.dynatrace.com"
+export DT_ACCESS_TOKEN="dt0c01.****"
+```
+
+Or use a `.env` file (not committed to git):
+
+```bash
+DT_ENDPOINT=https://<your-env-id>.live.dynatrace.com
+DT_ACCESS_TOKEN=dt0c01.****
+```
+
+| Variable | Description | Example |
+|---|---|---|
+| `DT_ENDPOINT` | Your Dynatrace environment URL | `https://abc12345.live.dynatrace.com` |
+| `DT_ACCESS_TOKEN` | A Dynatrace access token (classic `dt0c01.*` or Bearer/OAuth) | `dt0c01.****` |
 
 **Required token scopes:**
 
@@ -111,7 +124,7 @@ That's it. `export()` auto-detects the framework. Same pattern for DeepEval, MLf
 | Export evaluation results (BizEvents) | `bizevents.ingest` |
 | Export OTel traces | `openTelemetryTrace.ingest` |
 
-Set them as environment variables or pass them directly to `DynatraceClient()`:
+You can also pass credentials directly to `DynatraceClient()` instead of using environment variables:
 
 ```python
 dt = DynatraceClient(
@@ -127,10 +140,10 @@ dt = DynatraceClient(
 
 | Framework | Eval Export | Trace Export | Guide |
 |---|---|---|---|
-| [Ragas](https://docs.ragas.io/) | `dt.export(result)` | — | [Ragas → Dynatrace](src/dt_aiobs_ingest/ragas/README.md) |
-| [DeepEval](https://docs.confident-ai.com/) | `dt.export(result)` | — | [DeepEval → Dynatrace](src/dt_aiobs_ingest/deepeval/README.md) |
-| [MLflow](https://mlflow.org/) | `dt.export(result)` | `dt.configure_tracing(framework="mlflow")` | [MLflow → Dynatrace](src/dt_aiobs_ingest/mlflow/README.md) |
-| [Langfuse](https://langfuse.com/) | `dt.export(langfuse_client)` | `dt.configure_tracing(framework="langfuse")` | [Langfuse → Dynatrace](src/dt_aiobs_ingest/langfuse/README.md) |
+| [Ragas](https://docs.ragas.io/) | `dt.export(result)` | — | [Ragas → Dynatrace](src/dt_ai_ingest/ragas/README.md) |
+| [DeepEval](https://docs.confident-ai.com/) | `dt.export(result)` | — | [DeepEval → Dynatrace](src/dt_ai_ingest/deepeval/README.md) |
+| [MLflow](https://mlflow.org/) | `dt.export(result)` | `dt.configure_tracing(framework="mlflow")` | [MLflow → Dynatrace](src/dt_ai_ingest/mlflow/README.md) |
+| [Langfuse](https://langfuse.com/) | `dt.export(langfuse_client)` | `dt.configure_tracing(framework="langfuse")` | [Langfuse → Dynatrace](src/dt_ai_ingest/langfuse/README.md) |
 
 ## Usage
 
@@ -149,7 +162,7 @@ The library has two independent capabilities:
 Run your evaluation first, then export the already-computed results:
 
 ```python
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 
 dt = DynatraceClient()
 dt.export(result)                                # auto-detects framework
@@ -205,7 +218,7 @@ dt.export(langfuse, trace_ids=["trace-abc-123"])
 Call once at startup — all subsequent LLM spans are automatically exported to Dynatrace:
 
 ```python
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 
 dt = DynatraceClient()
 dt.configure_tracing(framework="mlflow", service_name="my-rag-app")
@@ -259,7 +272,7 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for internal design, module map, event sc
 └────────────────────────┬────────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────┐
-│  Adapter Layer  —  dt_aiobs_ingest.<framework>              │
+│  Adapter Layer  —  dt_ai_ingest.<framework>              │
 │  (auto-detect · normalize · build BizEvent payloads)        │
 └──────────┬──────────────────────────────────┬───────────────┘
            │                                  │

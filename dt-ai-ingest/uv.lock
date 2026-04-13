@@ -957,7 +957,7 @@ wheels = [
 ]
 
 [[package]]
-name = "dt-aiobs-ingest"
+name = "dt-ai-ingest"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
@@ -1012,7 +1012,7 @@ dev = [
 requires-dist = [
     { name = "datasets", marker = "extra == 'ragas'", specifier = ">=2.14.0" },
     { name = "deepeval", marker = "extra == 'deepeval'", specifier = ">=3.0.0" },
-    { name = "dt-aiobs-ingest", extras = ["ragas", "mlflow", "langfuse", "deepeval"], marker = "extra == 'all'" },
+    { name = "dt-ai-ingest", extras = ["ragas", "mlflow", "langfuse", "deepeval"], marker = "extra == 'all'" },
     { name = "httpx", specifier = ">=0.24.0" },
     { name = "langfuse", marker = "extra == 'langfuse'", specifier = ">=4.0.0" },
     { name = "mlflow", marker = "extra == 'mlflow'", specifier = ">=2.8.0" },

@@ -1,4 +1,4 @@
-"""Unit tests for dt_aiobs_ingest.langfuse.evaluation."""
+"""Unit tests for dt_ai_ingest.langfuse.evaluation."""
 
 import asyncio
 import json
@@ -9,8 +9,8 @@ from typing import Any
 
 import pytest
 
-from dt_aiobs_ingest.client import DynatraceClient
-from dt_aiobs_ingest.langfuse.evaluation import export_langfuse_scores
+from dt_ai_ingest.client import DynatraceClient
+from dt_ai_ingest.langfuse.evaluation import export_langfuse_scores
 
 
 # ---------------------------------------------------------------------------

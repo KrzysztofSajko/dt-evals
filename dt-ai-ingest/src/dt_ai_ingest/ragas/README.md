@@ -7,7 +7,7 @@ Export [Ragas](https://docs.ragas.io/) evaluation scores into Dynatrace as BizEv
 ## Install
 
 ```bash
-pip install dt-aiobs-ingest[ragas]
+pip install dt-ai-ingest[ragas]
 ```
 
 <details>
@@ -35,7 +35,7 @@ Run your Ragas evaluation first, then export the already-computed scores:
 ```python
 from ragas import evaluate
 from ragas.metrics import faithfulness, answer_relevancy
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 
 # 1. Run your evaluation
 result = evaluate(dataset, metrics=[faithfulness, answer_relevancy])

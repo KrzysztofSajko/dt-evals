@@ -1,4 +1,4 @@
-"""Tests for dt_aiobs_ingest.client."""
+"""Tests for dt_ai_ingest.client."""
 
 import json
 import logging
@@ -6,8 +6,8 @@ import logging
 import httpx
 import pytest
 
-from dt_aiobs_ingest.client import DynatraceClient, _bizevents_path
-from dt_aiobs_ingest.schema import EvalEvent
+from dt_ai_ingest.client import DynatraceClient, _bizevents_path
+from dt_ai_ingest.schema import EvalEvent
 
 
 class TestBizeventsPath:

@@ -7,7 +7,7 @@ Export [MLflow](https://mlflow.org/) evaluation metrics and execution traces int
 ## Install
 
 ```bash
-pip install dt-aiobs-ingest[mlflow]
+pip install dt-ai-ingest[mlflow]
 ```
 
 <details>
@@ -35,7 +35,7 @@ export DT_ACCESS_TOKEN=dt0c01.****        # needs bizevents.ingest + openTelemet
 Call once **before** your LLM calls. All `@mlflow.trace` spans created after this point go to Dynatrace automatically.
 
 ```python
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 import mlflow
 
 dt = DynatraceClient()
@@ -54,7 +54,7 @@ def call_llm(prompt: str) -> str:
 Run `mlflow.evaluate()` first, then export the results:
 
 ```python
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 import mlflow
 
 dt = DynatraceClient()

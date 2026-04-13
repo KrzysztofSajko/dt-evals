@@ -58,7 +58,7 @@ from dotenv import load_dotenv
 from langfuse import get_client
 from openai import OpenAI
 
-from dt_aiobs_ingest import DynatraceClient
+from dt_ai_ingest import DynatraceClient
 
 load_dotenv(Path(__file__).with_name(".env"))
 
