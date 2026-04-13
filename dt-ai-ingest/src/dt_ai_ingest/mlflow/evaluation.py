@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from dt_ai_ingest._sync import run_sync
@@ -14,6 +15,8 @@ from dt_ai_ingest.schema import build_eval_result_event
 if TYPE_CHECKING:
     # mlflow is an optional dependency; keep the import lazy for type hints only.
     import mlflow.models
+
+logger = logging.getLogger(__name__)
 
 
 def export_evaluation_results(
@@ -135,3 +138,8 @@ def export_evaluation_results(
 
     if events:
         run_sync(client.send_bizevents(events))
+    else:
+        logger.warning(
+            "No exportable metrics found after filtering — nothing sent to Dynatrace. "
+            "Check metric_allowlist / metric_blocklist settings."
+        )
