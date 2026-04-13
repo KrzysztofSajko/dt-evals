@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import warnings
 
@@ -16,14 +17,26 @@ from dt_ai_ingest.auth import make_auth_header
 logger = logging.getLogger(__name__)
 
 # Track the parameters used for the initial configuration so we can warn
-# if a subsequent call uses different values.
+# if a subsequent call uses different values.  The access token is stored
+# as a SHA-256 hash only — never as plaintext — to prevent accidental leaks
+# via debug dumps or logging framework introspection.
 _configured_params: dict[str, str] | None = None
+
+# Track the provider object itself so the idempotency fast-path detects when
+# an external framework has replaced the global provider between calls.
+_configured_provider: TracerProvider | None = None
 
 
 def _reset_configured_params() -> None:
     """Reset module-level state (for testing only)."""
-    global _configured_params  # noqa: PLW0603
+    global _configured_params, _configured_provider  # noqa: PLW0603
     _configured_params = None
+    _configured_provider = None
+
+
+def _hash_token(token: str) -> str:
+    """Return a hex SHA-256 digest of *token* for safe comparison."""
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def configure_tracing(
@@ -57,19 +70,23 @@ def configure_tracing(
     Returns:
         The ``TracerProvider`` (existing or newly created).
     """
-    global _configured_params  # noqa: PLW0603
+    global _configured_params, _configured_provider  # noqa: PLW0603
 
     normalised_endpoint = dt_endpoint.rstrip("/")
     otlp_endpoint = f"{normalised_endpoint}/api/v2/otlp/v1/traces"
+    token_hash = _hash_token(dt_access_token)
 
     current = trace.get_tracer_provider()
 
-    # --- Fast path: we already configured a provider in a previous call ---
-    if _configured_params is not None and isinstance(current, TracerProvider):
+    # --- Fast path: we already configured THIS provider in a previous call ---
+    # Check identity of the provider object, not just the params, so that if an
+    # external framework replaces the global provider we fall through and attach
+    # our exporter to the new one rather than silently returning.
+    if _configured_params is not None and _configured_provider is current and isinstance(current, TracerProvider):
         changed: list[str] = []
         if _configured_params["dt_endpoint"] != normalised_endpoint:
             changed.append("dt_endpoint")
-        if _configured_params["dt_access_token"] != dt_access_token:
+        if _configured_params["dt_access_token"] != token_hash:
             changed.append("dt_access_token")
         if _configured_params["service_name"] != service_name:
             changed.append("service_name")
@@ -87,7 +104,7 @@ def configure_tracing(
 
         return current
 
-    # --- A TracerProvider exists but was NOT created by us ---
+    # --- A TracerProvider exists but was NOT created by us (or was replaced) ---
     if isinstance(current, TracerProvider):
         exporter = OTLPSpanExporter(
             endpoint=otlp_endpoint,
@@ -96,9 +113,10 @@ def configure_tracing(
         current.add_span_processor(BatchSpanProcessor(exporter))
         _configured_params = {
             "dt_endpoint": normalised_endpoint,
-            "dt_access_token": dt_access_token,
+            "dt_access_token": token_hash,
             "service_name": service_name,
         }
+        _configured_provider = current
         return current
 
     # --- No SDK provider yet — create one ---
@@ -113,7 +131,8 @@ def configure_tracing(
 
     _configured_params = {
         "dt_endpoint": normalised_endpoint,
-        "dt_access_token": dt_access_token,
+        "dt_access_token": token_hash,
         "service_name": service_name,
     }
+    _configured_provider = provider
     return provider
