@@ -46,6 +46,7 @@ _EVAL_RESULT_FIELD_MAP: dict[str, str] = {
     "request_model": "gen_ai.request.model",
     "provider_name": "gen_ai.provider.name",
     "event_provider": "event.provider",
+    "adapter_name": "event.provider",
 }
 
 
