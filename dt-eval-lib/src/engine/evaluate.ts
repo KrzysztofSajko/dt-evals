@@ -133,8 +133,8 @@ async function callWithRetry(
         throw error;
       }
 
-      // Exponential backoff: 100ms, 200ms, 400ms...
-      const delay = 100 * 2 ** attempt;
+      // Exponential backoff capped at 5000ms: 100ms, 200ms, 400ms, ... up to 5s.
+      const delay = Math.min(100 * 2 ** attempt, 5000);
       await sleep(delay);
     }
   }
