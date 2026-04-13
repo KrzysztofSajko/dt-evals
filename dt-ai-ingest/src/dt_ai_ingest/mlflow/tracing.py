@@ -15,6 +15,12 @@ from dt_ai_ingest._otel import configure_tracing
 _atexit_registered: bool = False
 
 
+def _reset_atexit_flag() -> None:
+    """Reset module-level atexit state (for testing only)."""
+    global _atexit_registered  # noqa: PLW0603
+    _atexit_registered = False
+
+
 def configure_dynatrace_tracing(
     dt_endpoint: str,
     dt_access_token: str,
