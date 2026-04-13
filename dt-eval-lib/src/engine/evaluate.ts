@@ -110,14 +110,10 @@ async function callWithRetry(
   fn: () => Promise<LLMJudgeResponse>,
   maxRetries: number,
 ): Promise<LLMJudgeResponse> {
-  let lastError: unknown;
-
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error: unknown) {
-      lastError = error;
-
       // Don't retry non-transient errors
       if (error instanceof EvalResponseError || error instanceof EvalConfigError) {
         throw error;
@@ -137,8 +133,6 @@ async function callWithRetry(
       await sleep(delay);
     }
   }
-
-  throw lastError;
 }
 
 function sleep(ms: number): Promise<void> {
