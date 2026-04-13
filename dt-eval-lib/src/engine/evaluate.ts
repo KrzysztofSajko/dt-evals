@@ -58,6 +58,11 @@ function validateInput(input: EvalInput, prompt: PromptDefinition): void {
 
 function renderPrompt(template: string, input: EvalInput): string {
   let rendered = template;
+  // NOTE: The function form `() => value` is intentional on all replace() calls below.
+  // Using a plain string replacement (e.g. `.replace(pattern, input.input)`) would
+  // cause JavaScript to interpret `$$`, `$&`, `$'`, `` $` ``, and `$n` sequences in
+  // the replacement string as special backreferences, silently corrupting any user
+  // input that contains those characters. The function form bypasses this entirely.
   rendered = rendered.replace(/\{\{input\}\}/g, () => input.input);
   rendered = rendered.replace(/\{\{output\}\}/g, () => input.output);
   if (input.context != null) {
