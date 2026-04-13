@@ -83,7 +83,7 @@ def export_deepeval_results(
     if extra:
         shared_ctx.update(extra)
 
-    events = _build_events(test_results, num_test_cases, shared_ctx, eval_kwargs)
+    events = _build_events(test_results, shared_ctx, eval_kwargs)
 
     if events:
         run_sync(client.send_bizevents(events))
@@ -93,7 +93,6 @@ def export_deepeval_results(
 
 def _build_events(
     test_results: list[Any],
-    num_test_cases: int,
     shared_ctx: dict[str, Any],
     eval_kwargs: dict[str, Any],
 ) -> list[dict[str, Any]]:
