@@ -133,10 +133,7 @@ def build_eval_result_event(
     Pass ``extra`` for arbitrary framework-specific metadata.
     """
     all_fields = {"eval_name": eval_name, "score_value": score_value, **kwargs}
-    event: dict[str, Any] = {
-        "event.type": "gen_ai.evaluation.result",
-        
-    }
+    event: dict[str, Any] = {"event.type": "gen_ai.evaluation.result"}
     event.update(
         {
             _EVAL_RESULT_FIELD_MAP[k]: v
