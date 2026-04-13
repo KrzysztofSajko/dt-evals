@@ -121,7 +121,19 @@ class DynatraceClient:
             and current_loop_id != self._client_loop_id
         ):
             # Discard the stale client — its connections reference a dead loop
-            # so we cannot await aclose(). GC will clean up the socket.
+            # so we cannot await aclose() without risking a RuntimeError on the
+            # closed loop.  We orphan the client and rely on CPython's reference-
+            # counting GC to finalise the underlying socket.
+            #
+            # Trade-off: in long-lived processes or notebooks that call
+            # asyncio.run() repeatedly, discarded clients accumulate until GC
+            # collects them, which can briefly exhaust file descriptors under
+            # high concurrency.
+            #
+            # Mitigation: callers that control the event-loop lifecycle should
+            # use DynatraceClient as an async context manager (``async with``),
+            # which calls aclose() before the loop shuts down and avoids the
+            # orphan entirely.
             self._owned_client = None
             self._client_loop_id = None
 
