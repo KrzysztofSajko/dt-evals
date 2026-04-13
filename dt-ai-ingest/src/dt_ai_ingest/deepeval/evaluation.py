@@ -165,7 +165,7 @@ def _build_events(
                 # the event dict manually for the error case.
                 event: dict[str, Any] = {
                     "event.type": "gen_ai.evaluation.result",
-                    "event.provider": "dt-eval-lib",
+                    "event.provider": "deepeval",
                 }
                 event["gen_ai.evaluation.name"] = metric_name
                 if score_label is not None:
