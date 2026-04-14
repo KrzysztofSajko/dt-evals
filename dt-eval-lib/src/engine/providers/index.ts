@@ -5,11 +5,15 @@ import type { LLMProvider } from "./types";
 const DEFAULT_MODELS: Record<string, string> = {
   openai: "gpt-5.1",
   anthropic: "claude-sonnet-4-20250514",
+  vertex: "gemini-2.5-flash",
+  gemini: "gemini-2.5-flash",
 };
 
 const ENV_KEYS: Record<string, string> = {
   openai: "OPENAI_API_KEY",
   anthropic: "ANTHROPIC_API_KEY",
+  vertex: "GOOGLE_API_KEY",
+  gemini: "GOOGLE_API_KEY",
 };
 
 const ENV_BASE_URL_KEYS: Record<string, string> = {
@@ -19,13 +23,33 @@ const ENV_BASE_URL_KEYS: Record<string, string> = {
 
 export async function createProvider(options: ProviderOptions): Promise<LLMProvider> {
   const provider = options.provider;
-  if (provider !== "openai" && provider !== "anthropic") {
+  if (
+    provider !== "openai" &&
+    provider !== "anthropic" &&
+    provider !== "vertex" &&
+    provider !== "gemini"
+  ) {
     throw new EvalConfigError(`Unknown provider: ${provider}`);
   }
 
   const timeout = options.timeout ?? 30000;
   if (!Number.isInteger(timeout) || timeout <= 0) {
     throw new EvalConfigError(`timeout must be a positive integer (ms), got ${timeout}`);
+  }
+
+  const model = options.model ?? DEFAULT_MODELS[provider];
+
+  if (provider === "vertex" || provider === "gemini") {
+    const apiKey = options.apiKey ?? process.env[ENV_KEYS[provider]];
+
+    if (!apiKey) {
+      throw new EvalConfigError(
+        `Missing API key for ${provider}. Provide it via provider.apiKey or set the ${ENV_KEYS[provider]} environment variable.`,
+      );
+    }
+
+    const { GoogleProvider } = await import("./google");
+    return new GoogleProvider({ apiKey, model, timeout, vertexai: provider === "vertex" });
   }
 
   const apiKey = options.apiKey ?? process.env[ENV_KEYS[provider]];
@@ -37,7 +61,6 @@ export async function createProvider(options: ProviderOptions): Promise<LLMProvi
   }
 
   const baseUrl = options.baseUrl ?? process.env[ENV_BASE_URL_KEYS[provider]];
-  const model = options.model ?? DEFAULT_MODELS[provider];
   const providerConfig = { apiKey, model, timeout, baseUrl };
 
   switch (provider) {

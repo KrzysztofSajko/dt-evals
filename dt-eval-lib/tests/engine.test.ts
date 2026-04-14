@@ -3,28 +3,48 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // We'll mock the provider modules so no real API calls are made
 vi.mock("openai", () => {
   return {
-    default: vi.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: vi.fn(),
+    // biome-ignore lint/complexity/useArrowFunction: function expression required for new-able mock in vitest 4.x
+    default: vi.fn().mockImplementation(function () {
+      return {
+        chat: {
+          completions: {
+            create: vi.fn(),
+          },
         },
-      },
-    })),
+      };
+    }),
   };
 });
 
 vi.mock("@anthropic-ai/sdk", () => {
   return {
-    default: vi.fn().mockImplementation(() => ({
-      messages: {
-        create: vi.fn(),
-      },
-    })),
+    // biome-ignore lint/complexity/useArrowFunction: function expression required for new-able mock in vitest 4.x
+    default: vi.fn().mockImplementation(function () {
+      return {
+        messages: {
+          create: vi.fn(),
+        },
+      };
+    }),
+  };
+});
+
+vi.mock("@google/genai", () => {
+  return {
+    // biome-ignore lint/complexity/useArrowFunction: function expression required for new-able mock in vitest 4.x
+    GoogleGenAI: vi.fn().mockImplementation(function () {
+      return {
+        models: {
+          generateContent: vi.fn(),
+        },
+      };
+    }),
   };
 });
 
 import { evaluate } from "../src/engine/index";
 import { AnthropicProvider } from "../src/engine/providers/anthropic";
+import { GoogleProvider } from "../src/engine/providers/google";
 import { createProvider } from "../src/engine/providers/index";
 import { OpenAIProvider } from "../src/engine/providers/openai";
 import type { LLMJudgeResponse, LLMProvider } from "../src/engine/providers/types";
@@ -101,7 +121,7 @@ describe("evaluate() — happy path", () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it("evaluates with a BuiltInMetric enum value", async () => {
@@ -196,7 +216,7 @@ describe("evaluate() — prompt rendering", () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it("replaces {{input}} placeholder", async () => {
@@ -247,7 +267,7 @@ describe("evaluate() — input validation", () => {
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it("throws EvalInputError when required field 'context' is missing for faithfulness", async () => {
@@ -273,8 +293,15 @@ describe("evaluate() — input validation", () => {
 });
 
 describe("evaluate() — error handling", () => {
+  beforeEach(async () => {
+    const actual = await vi.importActual<typeof import("../src/engine/providers/index")>(
+      "../src/engine/providers/index",
+    );
+    vi.mocked(createProvider).mockImplementation(actual.createProvider);
+  });
+
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it("throws EvalConfigError when API key is missing", async () => {
@@ -372,8 +399,15 @@ describe("evaluate() — error handling", () => {
 });
 
 describe("provider factory", () => {
+  beforeEach(async () => {
+    const actual = await vi.importActual<typeof import("../src/engine/providers/index")>(
+      "../src/engine/providers/index",
+    );
+    vi.mocked(createProvider).mockImplementation(actual.createProvider);
+  });
+
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it("creates OpenAI provider when provider is 'openai'", async () => {
@@ -493,5 +527,188 @@ describe("provider factory", () => {
       if (origUrl !== undefined) process.env.ANTHROPIC_BASE_URL = origUrl;
       else delete process.env.ANTHROPIC_BASE_URL;
     }
+  });
+});
+
+describe("provider factory — vertex", () => {
+  beforeEach(async () => {
+    const actual = await vi.importActual<typeof import("../src/engine/providers/index")>(
+      "../src/engine/providers/index",
+    );
+    vi.mocked(createProvider).mockImplementation(actual.createProvider);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("creates Vertex provider when provider is 'vertex' with apiKey", async () => {
+    const provider = await createProvider({
+      provider: "vertex",
+      apiKey: "test-key",
+      timeout: 30000,
+      maxRetries: 2,
+    });
+    expect(provider).toBeInstanceOf(GoogleProvider);
+  });
+
+  it("falls back to GOOGLE_API_KEY env var", async () => {
+    const origKey = process.env.GOOGLE_API_KEY;
+    process.env.GOOGLE_API_KEY = "env-google-key";
+    try {
+      const provider = await createProvider({
+        provider: "vertex",
+        timeout: 30000,
+        maxRetries: 2,
+      });
+      expect(provider).toBeInstanceOf(GoogleProvider);
+    } finally {
+      if (origKey !== undefined) process.env.GOOGLE_API_KEY = origKey;
+      else delete process.env.GOOGLE_API_KEY;
+    }
+  });
+
+  it("throws EvalConfigError when no apiKey is provided for vertex", async () => {
+    const origKey = process.env.GOOGLE_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
+    try {
+      await expect(
+        createProvider({
+          provider: "vertex",
+          timeout: 30000,
+          maxRetries: 2,
+        }),
+      ).rejects.toBeInstanceOf(EvalConfigError);
+    } finally {
+      if (origKey !== undefined) process.env.GOOGLE_API_KEY = origKey;
+    }
+  });
+
+  it("uses custom model when specified", async () => {
+    const provider = await createProvider({
+      provider: "vertex",
+      apiKey: "test-key",
+      model: "gemini-2.5-pro",
+      timeout: 30000,
+      maxRetries: 2,
+    });
+    expect(provider).toBeInstanceOf(GoogleProvider);
+  });
+});
+
+describe("evaluate() — vertex provider", () => {
+  beforeEach(() => {
+    vi.mocked(createProvider).mockResolvedValue(
+      mockProvider({ scoreValue: 1, summary: "Good output", reasoning: "Output is correct" }),
+    );
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("evaluates with vertex provider", async () => {
+    const result = await evaluate(BuiltInMetric.Toxicity, baseInput, {
+      provider: { provider: "vertex", apiKey: "test-key" },
+    });
+    expect(result).toBeDefined();
+    expect(result.score).toBeDefined();
+    expect(result.explanation).toBeDefined();
+  });
+
+  it("returns correct EvalResult shape with vertex provider", async () => {
+    const result = await evaluate(BuiltInMetric.Toxicity, baseInput, {
+      provider: { provider: "vertex", apiKey: "test-key" },
+    });
+    expect(result).toEqual({
+      score: { value: 1, label: "pass" },
+      explanation: { summary: "Good output", reasoning: "Output is correct" },
+    });
+  });
+});
+
+describe("provider factory — gemini", () => {
+  beforeEach(async () => {
+    const actual = await vi.importActual<typeof import("../src/engine/providers/index")>(
+      "../src/engine/providers/index",
+    );
+    vi.mocked(createProvider).mockImplementation(actual.createProvider);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("creates Gemini provider when provider is 'gemini' with apiKey", async () => {
+    const provider = await createProvider({
+      provider: "gemini",
+      apiKey: "test-key",
+      timeout: 30000,
+      maxRetries: 2,
+    });
+    expect(provider).toBeInstanceOf(GoogleProvider);
+  });
+
+  it("falls back to GOOGLE_API_KEY env var", async () => {
+    const origKey = process.env.GOOGLE_API_KEY;
+    process.env.GOOGLE_API_KEY = "env-google-key";
+    try {
+      const provider = await createProvider({
+        provider: "gemini",
+        timeout: 30000,
+        maxRetries: 2,
+      });
+      expect(provider).toBeInstanceOf(GoogleProvider);
+    } finally {
+      if (origKey !== undefined) process.env.GOOGLE_API_KEY = origKey;
+      else delete process.env.GOOGLE_API_KEY;
+    }
+  });
+
+  it("throws EvalConfigError when no apiKey is provided for gemini", async () => {
+    const origKey = process.env.GOOGLE_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
+    try {
+      await expect(
+        createProvider({
+          provider: "gemini",
+          timeout: 30000,
+          maxRetries: 2,
+        }),
+      ).rejects.toBeInstanceOf(EvalConfigError);
+    } finally {
+      if (origKey !== undefined) process.env.GOOGLE_API_KEY = origKey;
+    }
+  });
+});
+
+describe("evaluate() — gemini provider", () => {
+  beforeEach(() => {
+    vi.mocked(createProvider).mockResolvedValue(
+      mockProvider({ scoreValue: 1, summary: "Good output", reasoning: "Output is correct" }),
+    );
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("evaluates with gemini provider", async () => {
+    const result = await evaluate(BuiltInMetric.Toxicity, baseInput, {
+      provider: { provider: "gemini", apiKey: "test-key" },
+    });
+    expect(result).toBeDefined();
+    expect(result.score).toBeDefined();
+    expect(result.explanation).toBeDefined();
+  });
+
+  it("returns correct EvalResult shape with gemini provider", async () => {
+    const result = await evaluate(BuiltInMetric.Toxicity, baseInput, {
+      provider: { provider: "gemini", apiKey: "test-key" },
+    });
+    expect(result).toEqual({
+      score: { value: 1, label: "pass" },
+      explanation: { summary: "Good output", reasoning: "Output is correct" },
+    });
   });
 });

@@ -1,17 +1,17 @@
 import type { Score } from "../scoring/types";
 
 /** Provider selection */
-export type Provider = "openai" | "anthropic";
+export type Provider = "openai" | "anthropic" | "vertex" | "gemini";
 
 /** Provider-related configuration */
 export interface ProviderOptions {
   /** Which LLM provider to use */
   provider: Provider;
-  /** API key — falls back to OPENAI_API_KEY / ANTHROPIC_API_KEY env vars */
+  /** API key — falls back to OPENAI_API_KEY / ANTHROPIC_API_KEY / GOOGLE_API_KEY env vars */
   apiKey?: string;
   /** Base URL for the provider API — falls back to OPENAI_BASE_URL / ANTHROPIC_BASE_URL env vars */
   baseUrl?: string;
-  /** Model override — defaults to gpt-5.1 / claude-sonnet-4-20250514 */
+  /** Model override — defaults to gpt-5.1 / claude-sonnet-4-20250514 / gemini-2.5-flash */
   model?: string;
   /** Request timeout in ms — default 30000 */
   timeout?: number;

@@ -65,18 +65,21 @@ console.log(result.explanation); // { summary: "...", reasoning: "..." }
 
 ## Providers
 
-Supports **OpenAI** and **Anthropic**. Configure via API key in code or environment variable.
+Supports **OpenAI**, **Anthropic**, **Vertex AI**, and **Gemini Developer API**. Configure via API key in code or environment variables.
 
 ### Environment Variables
 
 ```bash
-# API Keys
+# OpenAI
 export OPENAI_API_KEY="sk-..."
-export ANTHROPIC_API_KEY="sk-ant-..."
+export OPENAI_BASE_URL="https://your-proxy.example.com/v1"  # optional
 
-# Custom Base URLs (optional — for proxies, self-hosted, or compatible APIs)
-export OPENAI_BASE_URL="https://your-proxy.example.com/v1"
-export ANTHROPIC_BASE_URL="https://your-proxy.example.com"
+# Anthropic
+export ANTHROPIC_API_KEY="sk-ant-..."
+export ANTHROPIC_BASE_URL="https://your-proxy.example.com"  # optional
+
+# Google AI (Vertex AI & Gemini) — API key
+export GOOGLE_API_KEY="AIza..."
 ```
 
 Or use a `.env` file (not committed to git):
@@ -86,7 +89,38 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_BASE_URL=https://your-proxy.example.com/v1
 ANTHROPIC_BASE_URL=https://your-proxy.example.com
+GOOGLE_API_KEY=AIza...
 ```
+
+### Vertex AI Setup
+
+1. Get an API key from [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (Vertex AI Express Mode)
+2. Set `GOOGLE_API_KEY` env var (or pass `apiKey` in provider config)
+
+```ts
+await evaluate(BuiltInMetric.Toxicity, input, {
+  provider: {
+    provider: "vertex",
+    apiKey: "AQ...",
+  },
+});
+```
+
+### Gemini Developer API Setup
+
+1. Get an API key from [Google AI Studio](https://aistudio.google.com/apikey)
+2. Set `GOOGLE_API_KEY` env var (or pass `apiKey` in provider config)
+
+```ts
+await evaluate(BuiltInMetric.Toxicity, input, {
+  provider: {
+    provider: "gemini",
+    apiKey: "AIza...",
+  },
+});
+```
+
+> **Note:** Both `vertex` and `gemini` use the `@google/genai` SDK and require Node.js ≥ 20.
 
 When calling `evaluate()`, the library resolves config in this order:
 
@@ -136,10 +170,10 @@ import type { EvalConfig } from "dt-eval-lib";
 
 const config: EvalConfig = {
   provider: {
-    provider: "openai",          // "openai" | "anthropic"
+    provider: "openai",          // "openai" | "anthropic" | "vertex" | "gemini"
     apiKey: "sk-...",            // optional if env var is set
-    baseUrl: "https://...",      // optional
-    model: "gpt-5.1",           // optional — defaults to gpt-5.1 / claude-sonnet-4-20250514
+    baseUrl: "https://...",      // optional (openai/anthropic only)
+    model: "gpt-5.1",           // optional — defaults to gpt-5.1 / claude-sonnet-4-20250514 / gemini-2.5-flash
     timeout: 30000,              // optional — request timeout in ms (default 30000)
     maxRetries: 2,               // optional — retries on transient errors (default 2)
   },
