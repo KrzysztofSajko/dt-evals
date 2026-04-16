@@ -1,6 +1,7 @@
 import type { ScoringScale } from "../scoring/types";
 
 export enum BuiltInMetric {
+  Fluency = "fluency",
   Toxicity = "toxicity",
   Faithfulness = "faithfulness",
   Hallucination = "hallucination",
@@ -15,6 +16,9 @@ export enum BuiltInMetric {
   SummarizationQuality = "summarization-quality",
   Conciseness = "conciseness",
 }
+
+/** Identifier for the population-level drift detection metric. */
+export const DRIFT_METRIC_ID = "drift";
 
 export interface PromptDefinition {
   id: string;

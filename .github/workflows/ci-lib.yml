@@ -1,0 +1,36 @@
+---
+name: CI — dt-eval-lib
+
+on:
+  pull_request:
+    paths:
+      - "dt-eval-lib/**"
+      - ".github/workflows/ci-lib.yml"
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    name: Test & Build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        working-directory: dt-eval-lib
+        run: npm run lint
+
+      - name: Test
+        working-directory: dt-eval-lib
+        run: npm test
+
+      - name: Build
+        working-directory: dt-eval-lib
+        run: npm run build
