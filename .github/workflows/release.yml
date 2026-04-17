@@ -82,12 +82,13 @@ jobs:
           id-token: write # OIDC token for npm trusted publishing
           contents: read
       if: ${{ fromJSON(needs.release-please.outputs.build_config).mode == 'npm' && fromJSON(needs.release-please.outputs.release_created || false) }}
+      defaults:
+        run:
+          shell: bash
+          working-directory: ${{ fromJSON(needs.release-please.outputs.build_config).folder }}
 
       steps:
           - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-
-          - name: Select package
-            run: cd ${{ fromJSON(needs.release-please.outputs.build_config).folder }}
 
           - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
             with:
