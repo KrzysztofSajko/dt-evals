@@ -50,7 +50,7 @@ jobs:
             const changedItems = JSON.parse(process.env.CHANGED_ITEMS || '[]');
             console.log("changed items", changedItems);
             console.log("setting up release config...");
-            const releaseConfig = {};
+            let releaseConfig = {};
             changedItems.forEach(item => {
                 switch (item) {
                     case "dt-eval-cli":
