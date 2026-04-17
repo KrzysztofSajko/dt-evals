@@ -25,6 +25,9 @@
   "engines": {
     "node": ">=20"
   },
+  "keywords": [
+    "LLM"
+  ],
   "homepage": "https://github.com/dynatrace-oss/dt-evals#readme",
   "bugs": {
     "url": "https://github.com/dynatrace-oss/dt-evals/issues"
