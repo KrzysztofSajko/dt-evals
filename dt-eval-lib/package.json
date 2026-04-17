@@ -29,8 +29,7 @@
     "LLM",
     "AI",
     "evaluation",
-    "prompts",
-    "experimentation"
+    "prompts"
   ],
   "homepage": "https://github.com/dynatrace-oss/dt-evals#readme",
   "bugs": {
