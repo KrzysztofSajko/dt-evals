@@ -1,6 +1,6 @@
 {
   "name": "@dynatrace-oss/dt-eval-lib",
-  "version": "0.0.9-alpha",
+  "version": "0.0.7-alpha",
   "type": "module",
   "description": "Minimal TypeScript library for running LLM-as-a-judge evaluations",
   "main": "dist/index.js",
@@ -29,8 +29,7 @@
     "LLM",
     "AI",
     "evaluation",
-    "prompts",
-    "experimentation"
+    "prompts"
   ],
   "homepage": "https://github.com/dynatrace-oss/dt-evals#readme",
   "bugs": {
