@@ -4,6 +4,8 @@ End-to-end LLM evaluation toolkit for Dynatrace AI Observability.
 
 `dt-eval` is the main interface. It pulls live `gen_ai.*` spans from your Dynatrace environment, masks sensitive data in memory, scores real production interactions with an LLM judge, and writes structured evaluation results back to Dynatrace as business events — keeping evals, traces, metrics, alerts, and dashboards in one place.
 
+![dt-evals welcome](assets/dt-evals-welcome.png)
+
 ## Packages
 
 | Package | Description |
@@ -16,18 +18,18 @@ End-to-end LLM evaluation toolkit for Dynatrace AI Observability.
 
 - Node.js `>=20`
 - A Dynatrace environment with GenAI spans (`gen_ai.*` OTEL attributes)
-- An API key for your judge provider (OpenAI, Anthropic, or Google)
+- Credentials for your judge provider (OpenAI, Anthropic, Google, AWS Bedrock, or Azure OpenAI)
 
 ## Install
 
 ```bash
-npm install -g dt-eval
+npm install -g github:dynatrace-oss/dt-evals
 ```
 
 Or run without installing:
 
 ```bash
-npx dt-eval <command>
+npx github:dynatrace-oss/dt-evals <command>
 ```
 
 ## Quick Start
@@ -105,7 +107,7 @@ dt-eval run --since 2h --sample 20 --concurrency 8 --debug
 | Flag | Description |
 |------|-------------|
 | `--since <duration>` | Trace lookback window, e.g. `1h`, `6h`, `24h` |
-| `--sample <percent>` | Percentage of traces to evaluate |
+| `--sample <percent>` | Override sampling: percentage of traces to evaluate (0–100). When omitted, uses the strategy from your config file (default: random 5%) |
 | `--metric <name>` | Run only one evaluator |
 | `--dry-run` | Fetch and transform traces, skip judge calls and writes |
 | `--ci` | JSON result output and exit code `1` on threshold breach |
@@ -241,12 +243,14 @@ See [`dt-eval-deploy`](dt-eval-deploy) for Docker-based deployment.
 
 ## Supported Providers
 
-| Provider | Default model | Secondary model |
-|----------|--------------|-----------------|
-| `openai` | `gpt-4.1` | `gpt-4.1-mini` |
-| `anthropic` | `claude-sonnet-4-6` | `claude-opus-4-6` |
-| `vertex` | `gemini-2.5-pro` | `gemini-2.5-flash` |
-| `gemini` | `gemini-2.5-flash` | `gemini-2.5-pro` |
+| Provider | Default model | Notes |
+|----------|--------------|-------|
+| `openai` | `gpt-5.4` | `OPENAI_API_KEY` |
+| `anthropic` | `claude-sonnet-4-7` | `ANTHROPIC_API_KEY` |
+| `vertex` | `gemini-3-pro` | `GOOGLE_API_KEY` |
+| `gemini` | `gemini-3.1-flash-live` | `GOOGLE_API_KEY` |
+| `bedrock` | `anthropic.claude-opus-4-7` | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` |
+| `azure-openai` | user-provided deployment name | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_VERSION` |
 
 Override the model with `--model <id>` or set `judge.model` in config.
 
@@ -273,6 +277,7 @@ judge:
 scope:
   service: travel-assistant
   since: 1h
+  # sampling is optional — defaults to random 5% when omitted
   sampling:
     strategy: random
     percent: 10
@@ -290,6 +295,29 @@ alerts:
     relevance: 0.7
 ```
 
+**Bedrock example:**
+
+```yaml
+judge:
+  provider: bedrock
+  model: us.anthropic.claude-3-5-haiku-20241022-v1:0
+  region: us-east-1
+  # or use AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY env vars
+  apiKey: <AWS_ACCESS_KEY_ID>
+  secretKey: <AWS_SECRET_ACCESS_KEY>
+```
+
+**Azure OpenAI example:**
+
+```yaml
+judge:
+  provider: azure-openai
+  model: my-gpt4-deployment
+  baseUrl: https://my-resource.openai.azure.com/
+  apiVersion: 2025-04-01-preview
+  # or use AZURE_OPENAI_API_KEY + AZURE_OPENAI_ENDPOINT + AZURE_OPENAI_API_VERSION env vars
+```
+
 Key environment variables:
 
 ```bash
@@ -299,9 +327,20 @@ DT_API_TOKEN=dt0c01.xxxxx
 JUDGE_PROVIDER=openai
 JUDGE_MODEL=gpt-4.1
 
+# OpenAI
 OPENAI_API_KEY=sk-...
+# Anthropic
 ANTHROPIC_API_KEY=sk-ant-...
+# Google (Vertex / Gemini)
 GOOGLE_API_KEY=...
+# AWS Bedrock
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=us-east-1
+# Azure OpenAI
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_ENDPOINT=https://my-resource.openai.azure.com/
+AZURE_OPENAI_API_VERSION=2025-04-01-preview
 ```
 
 ---

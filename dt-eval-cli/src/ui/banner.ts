@@ -31,8 +31,10 @@ function applyGradient(text: string): string {
 export function printBanner(): void {
   if (!process.stdout.isTTY) return;
 
-  const banner = figlet.textSync('DT-EVAL-CLI', { font: 'ANSI Shadow' });
+  const banner = figlet.textSync('DT-EVALS', { font: 'ANSI Shadow' });
 
   process.stdout.write('\n' + applyGradient(banner) + '\n');
-  process.stdout.write('  welcome to eval-cli\n\n');
+  process.stdout.write('  Welcome to dt-evals\n');
+  process.stdout.write('  Evaluate production LLM & agent interactions with Dynatrace AI Observability.\n\n');
+
 }
