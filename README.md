@@ -1,5 +1,12 @@
 # dt-evals
 
+[![npm version](https://img.shields.io/npm/v/@dynatrace-oss/dt-evals/alpha?style=flat-square&label=npm&color=cb3837)](https://www.npmjs.com/package/@dynatrace-oss/dt-evals)
+[![npm downloads](https://img.shields.io/npm/dm/@dynatrace-oss/dt-evals?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@dynatrace-oss/dt-evals)
+[![Build](https://github.com/dynatrace-oss/dt-evals/actions/workflows/ci-cli.yml/badge.svg?branch=main)](https://github.com/dynatrace-oss/dt-evals/actions/workflows/ci-cli.yml)
+[![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](LICENSE)
+[![Node](https://img.shields.io/node/v/@dynatrace-oss/dt-evals/alpha?style=flat-square)](package.json)
+[![Lib on npm](https://img.shields.io/npm/v/@dynatrace-oss/dt-eval-lib/alpha?style=flat-square&label=lib&color=cb3837)](https://www.npmjs.com/package/@dynatrace-oss/dt-eval-lib)
+
 End-to-end LLM evaluation toolkit for Dynatrace AI Observability.
 
 `dt-evals` is the main interface. It pulls live `gen_ai.*` spans from your Dynatrace environment, masks sensitive data in memory, scores real production interactions with an LLM judge, and writes structured evaluation results back to Dynatrace as business events — keeping evals, traces, metrics, alerts, and dashboards in one place.

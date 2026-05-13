@@ -1,5 +1,10 @@
 # dt-eval-lib
 
+[![npm version](https://img.shields.io/npm/v/@dynatrace-oss/dt-eval-lib/alpha?style=flat-square&label=npm&color=cb3837)](https://www.npmjs.com/package/@dynatrace-oss/dt-eval-lib)
+[![npm downloads](https://img.shields.io/npm/dm/@dynatrace-oss/dt-eval-lib?style=flat-square&color=cb3837)](https://www.npmjs.com/package/@dynatrace-oss/dt-eval-lib)
+[![Build](https://github.com/dynatrace-oss/dt-evals/actions/workflows/ci-lib.yml/badge.svg?branch=main)](https://github.com/dynatrace-oss/dt-evals/actions/workflows/ci-lib.yml)
+[![License](https://img.shields.io/badge/license-Apache_2.0-blue?style=flat-square)](../LICENSE)
+
 Minimal TypeScript library for running LLM-as-a-judge evaluations.
 
 ## Install
