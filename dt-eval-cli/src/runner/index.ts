@@ -360,6 +360,7 @@ export async function runEvals(
     durationMs: result.durationMs,
     metrics: metricIds,
     since,
+    errorSamples: result.errorSamples.length > 0 ? result.errorSamples : undefined,
   });
 
   return result;
