@@ -11,6 +11,22 @@ import { validateLLMResponse } from "./validate";
 const SYSTEM_PROMPT =
   'You are an expert LLM evaluation judge. Respond only with valid JSON: {"scoreValue": <number>, "summary": "<string>", "reasoning": "<string>"}';
 
+/**
+ * Strip a leading/trailing markdown code fence (e.g. ```json ... ```) that some
+ * models — notably the Nova family — wrap JSON in despite being told to return
+ * only raw JSON. Returns the trimmed input unchanged when no fence is present.
+ */
+function stripCodeFences(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed.startsWith("```")) {
+    return trimmed;
+  }
+  return trimmed
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```\s*$/, "")
+    .trim();
+}
+
 export class BedrockProvider extends BaseProvider {
   private client: BedrockRuntimeClient;
 
@@ -18,12 +34,15 @@ export class BedrockProvider extends BaseProvider {
     super(config);
     this.client = new BedrockRuntimeClient({
       region: config.region ?? "us-east-1",
-      credentials: config.apiKey
-        ? {
-            accessKeyId: config.apiKey,
-            secretAccessKey: config.secretKey ?? "",
-          }
-        : undefined,
+      // Only construct an explicit credential object when static keys are
+      // configured. Otherwise leave credentials undefined so the AWS SDK's
+      // default credential provider chain resolves them — this covers SSO /
+      // temporary env credentials (AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY +
+      // AWS_SESSION_TOKEN), IAM roles and AWS_PROFILE.
+      credentials:
+        config.apiKey && config.secretKey
+          ? { accessKeyId: config.apiKey, secretAccessKey: config.secretKey }
+          : undefined,
     });
   }
 
@@ -49,7 +68,7 @@ export class BedrockProvider extends BaseProvider {
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(text);
+      parsed = JSON.parse(stripCodeFences(text));
     } catch {
       throw new EvalResponseError(`Bedrock returned non-JSON content: ${text.slice(0, 200)}`);
     }

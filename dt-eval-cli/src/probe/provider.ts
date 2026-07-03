@@ -120,15 +120,18 @@ export async function probeProvider(opts: ProbeOptions): Promise<ProbeResult> {
     }
 
     if (provider === 'bedrock') {
-      const accessKeyId = opts.apiKey ?? process.env['AWS_ACCESS_KEY_ID'];
-      const secretAccessKey = opts.secretKey ?? process.env['AWS_SECRET_ACCESS_KEY'];
       const region = opts.region ?? process.env['AWS_REGION'] ?? process.env['AWS_DEFAULT_REGION'] ?? 'us-east-1';
       // Lazy-import so non-Bedrock users don't pay the SDK init cost on every doctor/validate run.
       const { BedrockRuntimeClient, ConverseCommand } = await import('@aws-sdk/client-bedrock-runtime');
+      // Only build an explicit credential object from configured static keys.
+      // Otherwise leave credentials undefined so the AWS SDK default credential
+      // chain resolves them — this covers SSO / temporary env credentials
+      // (AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + AWS_SESSION_TOKEN), IAM
+      // roles and AWS_PROFILE.
       const client = new BedrockRuntimeClient({
         region,
-        credentials: accessKeyId && secretAccessKey
-          ? { accessKeyId, secretAccessKey }
+        credentials: opts.apiKey && opts.secretKey
+          ? { accessKeyId: opts.apiKey, secretAccessKey: opts.secretKey }
           : undefined,
       });
       try {
