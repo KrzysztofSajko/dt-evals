@@ -84,6 +84,7 @@ export function buildGenAiSpanQuery(opts: DqlQueryOptions): string {
     'trace.id',
     'span.id',
     'start_time',
+    'end_time',
     'status.code',
     'gen_ai.system',
     'gen_ai.provider.name',
@@ -247,7 +248,8 @@ export function parseSpanResults(
     spans.push({
       traceId,
       spanId: asString(r['span.id']),
-      timestamp: asString(r['start_time']) ?? new Date().toISOString(),
+      startTime: asString(r['start_time']),
+      endTime: asString(r['end_time']),
       input,
       output,
       systemInstruction,
