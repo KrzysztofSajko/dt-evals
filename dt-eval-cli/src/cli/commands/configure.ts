@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { spawnSync } from 'node:child_process';
 import { join, basename } from 'node:path';
 import { loadConfig, saveConfig, validateConfig } from '../../config/index.js';
+import { updateEnvFile } from '../../config/env-file.js';
 import type { DtEvalConfig } from '../../config/schema.js';
 import { metricId } from '../../config/schema.js';
 import { DEFAULT_JUDGE_MODELS } from '../../config/defaults.js';
@@ -77,6 +78,75 @@ function printCostEstimate(
   console.log(`  Total per run:       ~$${totalUsd.toFixed(4)}`);
   console.log('\n  ⚠  Ballpark only — token counts vary by span length and metric.');
   console.log('  Always monitor your actual inference costs in your provider dashboard.\n');
+}
+
+/**
+ * Env var name that holds the API key for each provider, matching the fallbacks
+ * in applyEnvVars(). Vertex is intentionally absent — it uses ADC / Workload
+ * Identity and needs no key.
+ */
+const PROVIDER_KEY_ENV: Partial<Record<DtEvalConfig['judge']['provider'], string>> = {
+  openai: 'OPENAI_API_KEY',
+  anthropic: 'ANTHROPIC_API_KEY',
+  'azure-openai': 'AZURE_OPENAI_API_KEY',
+  gemini: 'GEMINI_API_KEY',
+  bedrock: 'AWS_ACCESS_KEY_ID',
+};
+
+/**
+ * Collect the effective secrets from the resolved config into `.env` variable
+ * names. This preserves existing working credentials when a user re-runs
+ * `configure` without re-entering every secret, so stripping YAML secrets does
+ * not silently break the config.
+ */
+function collectSecretEnv(config: DtEvalConfig): Record<string, string> {
+  const env: Record<string, string> = {};
+
+  if (config.dynatrace.apiToken) env['DT_API_TOKEN'] = config.dynatrace.apiToken;
+  if (config.dynatrace.origin?.apiToken) env['DT_ORIGIN_API_TOKEN'] = config.dynatrace.origin.apiToken;
+  if (config.dynatrace.destination?.apiToken) env['DT_DESTINATION_API_TOKEN'] = config.dynatrace.destination.apiToken;
+
+  const keyEnv = PROVIDER_KEY_ENV[config.judge.provider];
+  if (keyEnv && config.judge.apiKey) env[keyEnv] = config.judge.apiKey;
+  if (config.judge.provider === 'bedrock' && config.judge.secretKey) {
+    env['AWS_SECRET_ACCESS_KEY'] = config.judge.secretKey;
+  }
+
+  return env;
+}
+
+/**
+ * Persist secrets to cwd `.env` (gitignored) and tell the user which names to
+ * wire up as CI/CD pipeline secrets. No-op when nothing is configured.
+ */
+function persistSecretsToEnv(config: DtEvalConfig, log: (msg: string) => void): void {
+  const secretEnv = collectSecretEnv(config);
+  if (Object.keys(secretEnv).length === 0) return;
+  const envPath = join(process.cwd(), '.env');
+  updateEnvFile(envPath, secretEnv);
+  log(`Secrets written to ${envPath} (gitignored) — kept out of the config file`);
+  log(`For CI/CD, set these as pipeline secrets instead: ${Object.keys(secretEnv).join(', ')}`);
+}
+
+export function resolveConfiguredApiKey(
+  existing: Partial<DtEvalConfig['judge']> | undefined,
+  provider: DtEvalConfig['judge']['provider'],
+  enteredApiKey: string | undefined,
+  opts?: { preserveExistingVertexKey?: boolean },
+): string | undefined {
+  if (enteredApiKey) {
+    return enteredApiKey;
+  }
+
+  if (provider !== existing?.provider) {
+    return undefined;
+  }
+
+  if (provider === 'vertex' && !opts?.preserveExistingVertexKey) {
+    return undefined;
+  }
+
+  return existing.apiKey;
 }
 
 async function testServiceSpans(
@@ -240,6 +310,7 @@ export function createConfigureCommand(): Command {
         vertex: 'Vertex AI API key (optional — leave blank to use ADC / Workload Identity)',
         bedrock: 'AWS Access Key ID — leave blank to rely on AWS_ACCESS_KEY_ID env var / IAM role',
       };
+      const existingProviderApiKey = resolveConfiguredApiKey(existing.judge, provider, undefined);
 
       let apiKey: string;
       let bedrockSecretKey = '';
@@ -252,7 +323,7 @@ export function createConfigureCommand(): Command {
       if (provider === 'bedrock') {
         apiKey = await input({
           message: providerApiKeyLabel[provider],
-          default: existing.judge?.apiKey ?? '',
+          default: existingProviderApiKey ?? '',
         });
         bedrockSecretKey = await password({
           message: 'AWS Secret Access Key — leave blank to rely on AWS_SECRET_ACCESS_KEY env var',
@@ -310,6 +381,8 @@ export function createConfigureCommand(): Command {
         default: existing.judge?.model ?? '',
       });
 
+      const resolvedApiKey = resolveConfiguredApiKey(existing.judge, provider, apiKey);
+
       // ── Evaluators ───────────────────────────────────────
       const enabledMetricIds = (existing.metrics?.enabled ?? allMetricIds).map(metricId);
       const selectedMetrics = await checkbox({
@@ -344,7 +417,7 @@ export function createConfigureCommand(): Command {
         },
         judge: {
           provider,
-          apiKey: apiKey || existing.judge?.apiKey,
+          ...(resolvedApiKey ? { apiKey: resolvedApiKey } : {}),
           ...(provider === 'bedrock' && {
             secretKey: bedrockSecretKey || existing.judge?.secretKey,
             region: bedrockRegion || existing.judge?.region,
@@ -385,6 +458,7 @@ export function createConfigureCommand(): Command {
       try {
         saveConfig(updated, outputPath);
         logger.success(`Config saved to ${outputPath}`);
+        persistSecretsToEnv(updated, (msg) => logger.info(msg));
       } catch (err) {
         logger.error(`Failed to save config: ${(err as Error).message}`);
         process.exit(1);
@@ -414,6 +488,17 @@ export function createConfigureCommand(): Command {
     }
 
     // ── Flag-only mode ────────────────────────────────────
+    const provider = (options.provider as DtEvalConfig['judge']['provider']) ?? existing.judge?.provider ?? 'openai';
+    const preserveExistingVertexKey = !(
+      options.provider === 'vertex' ||
+      options.project !== undefined ||
+      options.location !== undefined ||
+      options.apiKey !== undefined
+    );
+    const resolvedApiKey = resolveConfiguredApiKey(existing.judge, provider, options.apiKey, {
+      preserveExistingVertexKey,
+    });
+
     const updated: DtEvalConfig = {
       schemaVersion: existing.schemaVersion ?? 1,
       name: existing.name,
@@ -422,8 +507,8 @@ export function createConfigureCommand(): Command {
         apiToken: options.apiToken ?? existing.dynatrace?.apiToken,
       },
       judge: {
-        provider: (options.provider as DtEvalConfig['judge']['provider']) ?? existing.judge?.provider ?? 'openai',
-        apiKey: options.apiKey ?? existing.judge?.apiKey,
+        provider,
+        ...(resolvedApiKey ? { apiKey: resolvedApiKey } : {}),
         model: options.model ?? existing.judge?.model,
         project: options.project ?? existing.judge?.project,
         location: options.location ?? existing.judge?.location,
@@ -452,6 +537,7 @@ export function createConfigureCommand(): Command {
     try {
       saveConfig(updated, outputPath);
       console.log(`Config saved to ${outputPath}`);
+      persistSecretsToEnv(updated, (msg) => console.log(msg));
       console.log(`\n  Copy this to run the newly created config:`);
       console.log(`  dt-evals run ${basename(outputPath)}\n`);
     } catch (err) {
