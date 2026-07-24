@@ -24,7 +24,6 @@ The repository also includes `dt-eval-lib`, a reusable TypeScript evaluation eng
 npx @dynatrace-oss/dt-evals configure
 npx @dynatrace-oss/dt-evals validate
 npx @dynatrace-oss/dt-evals run --since 1h --sample 10 --concurrency 10
-npx @dynatrace-oss/dt-evals deploy --provider aws
 ```
 
 Tune `--concurrency` (or `judge.concurrency` in your yaml) to control how many judge calls run in parallel — bump it for faster runs, drop it if the provider rate-limits you. Default is 5.
@@ -40,7 +39,6 @@ Tune `--concurrency` (or `judge.concurrency` in your yaml) to control how many j
 - Go from low score to root cause with end-to-end AI observability
 - Correlate failures with prompts, retrieval, tool calls, latency, and dependencies
 - Reuse the same evaluator catalog in CI, app code, and local workflows with dt-eval-lib
-- Deploy the runner to AWS Lambda, Google Cloud Run, Azure Functions or Docker for continuous evals
 - Trigger alerts and optional remediation from the same evaluation pipeline
 
 ## Packages
@@ -53,12 +51,12 @@ Tune `--concurrency` (or `judge.concurrency` in your yaml) to control how many j
 
 ## What It Does
 
-- **13 built-in judge metrics** for safety, grounding, relevance, quality, and retrieval quality
+- **14 built-in judge metrics** for safety, grounding, relevance, quality, and retrieval quality
 - **Statistical drift detection** against a 7 day baseline of prior evaluation scores
 - **Flexible sampling** with random percentage, latest `N`, or `errors-only`
 - **PII masking before judge calls** for emails, phone numbers, credit cards, and SSNs
 - **Evaluated prompt/response excluded from bizevents by default** — opt in with `storeEvaluatedPrompt` (see [Configuration](#configuration))
-- **OpenAI and Anthropic support** with optional custom base URLs for gateways and proxies
+- **OpenAI, Anthropic, Azure OpenAI, Google Gemini Enterprise Platform (Vertex AI), and Bedrock support** with optional custom base URLs for gateways and proxies
 - **CI friendly runs** with JSON output and non-zero exit codes on threshold breaches
 - **Local run history** with list, inspect, and export flows
 - **Scheduled runs** stored locally and triggerable on demand
@@ -83,7 +81,7 @@ The current CLI path is Dynatrace specific. The product positioning is broader: 
 
 - Node.js `>=20`
 - A Dynatrace environment with GenAI spans or OpenTelemetry-style `gen_ai.*` fields
-- An OpenAI or Anthropic API key for the judge model
+- Credentials for your judge provider (OpenAI, Anthropic, Azure OpenAI, Google Gemini Enterprise Platform (Vertex AI), or Bedrock)
 
 ## Install
 
@@ -290,7 +288,6 @@ name: travel-assistant-prod
 
 dynatrace:
   environmentUrl: https://your-env.live.dynatrace.com
-  apiToken: dt0c01.xxxxx
   dtctlContext: my-prod-context
 
 judge:
@@ -298,7 +295,7 @@ judge:
   model: gpt-4.1
   timeout: 30000
   maxRetries: 2
-  concurrency: 5         # parallel judge calls; --concurrency overrides this
+  concurrency: 5
 
 scope:
   service: travel-assistant
@@ -321,9 +318,6 @@ alerts:
     relevance: 0.7
     answer-completeness: 0.8
 
-# Off by default — the evaluated prompt/response are not written back to Dynatrace.
-# Set to true to include gen_ai.evaluation.input.question/.answer/.system_prompt
-# in the result bizevents. Overridable per-invocation with --store-evaluated-prompt.
 storeEvaluatedPrompt: false
 ```
 
@@ -346,10 +340,8 @@ and `destination` (write):
 dynatrace:
   origin:
     environmentUrl: https://prod.live.dynatrace.com
-    apiToken: dt0s16.xxxxx          # needs storage:spans:read, storage:buckets:read
   destination:
     environmentUrl: https://eval-results.dev.apps.dynatracelabs.com
-    apiToken: dt0s16.yyyyy          # needs storage:bizevents:read for drift, plus storage:events:write and storage:metrics:write
 ```
 
 Top-level `environmentUrl` / `apiToken` (if present) act as fallbacks — if
@@ -382,41 +374,50 @@ For `dt-evals alerts apply` (Dynatrace Workflows), grant these additionally on t
 ### Custom span field mapping
 
 By default, the CLI reads OTel GenAI semconv (`gen_ai.input.messages`,
-`gen_ai.output.messages`, `gen_ai.output.message`, …) and OpenLLMetry conventions (`gen_ai.prompt.N.*`,
-`gen_ai.completion.0.content`). If your spans expose the LLM I/O under
-different attribute names, point the CLI at them via `scope.spanFields`.
+`gen_ai.output.messages`, `gen_ai.output.message`, …). It also probes a
+small set of legacy fallback attributes (`gen_ai.prompt.N.*`,
+`gen_ai.completion.0.content`) for compatibility with older emitters. If
+your spans expose the LLM I/O under different attribute names — for
+example OpenInference (`llm.input_messages`, `llm.output_messages`,
+`llm.model_name`) — point the CLI at them via `scope.spanFields`. See the
+[`dynatrace-ai-agent-instrumentation-examples`](https://github.com/dynatrace-oss/dynatrace-ai-agent-instrumentation-examples)
+for end-to-end instrumentation examples.
 Each entry accepts a single attribute or a list of candidates; the first
 non-null value wins, with the built-in defaults appended as fallback.
 
-**Example 1 — non-semconv spans:**
-
-```yaml
-scope:
-  service: my-llm-service
-  since: 30m
-  spanFields:
-    input: llm.user_input              # or [llm.user_input, my.custom.input]
-    output: llm.response
-    context: span.context              # can point to any span field the user wants as evaluator context, e.g. RAG context or system prompt
-    systemInstruction: llm.system
-    model: llm.model
-```
-
-**Example 2 — OTel GenAI plural form** (some Bedrock / Vertex SDK
-emitters serialize the full message array under the plural attribute
-name `gen_ai.output.messages` instead of the singular `gen_ai.output.message`):
+**Example 1 — OTel GenAI variant** (some Bedrock / Vertex SDK emitters
+serialize the full message array under the plural attribute
+`gen_ai.output.messages` instead of the singular
+`gen_ai.output.message`):
 
 ```yaml
 scope:
   service: pydantic-ai-music-agent
   spanFields:
-    output: gen_ai.output.messages     # JSON-encoded array of {role, parts}
+    output: [gen_ai.output.message, gen_ai.output.messages]
 ```
 
 The runner stringifies whatever it finds, so a JSON array under
 `gen_ai.output.messages` reaches the judge as the assistant turn(s).
-This is convention-friendly: list every variant you've seen and the
-parser walks them in order.
+This is still OTel GenAI-compatible — `spanFields` just lets you handle
+emitter-specific variants explicitly.
+
+**Example 2 — OTel spans not following the GenAI SemConv (OpenInference):**
+
+```yaml
+scope:
+  service: my-openinference-service
+  since: 30m
+  spanFields:
+    input: [llm.input_messages, input.value]
+    output: [llm.output_messages, output.value]
+    model: llm.model_name
+```
+
+OpenInference usually stores chat turns in `llm.input_messages` /
+`llm.output_messages` and plain-text payloads in `input.value` /
+`output.value`, so listing both keeps the mapping resilient across
+instrumentations.
 
 ### Per-metric input routing
 
@@ -429,22 +430,20 @@ turn in isolation, not the joined transcript:
 ```yaml
 metrics:
   enabled:
-    - faithfulness                                  # legacy string form
+    - faithfulness                                  # plain string form
     - id: user-frustration
       inputs:
-        input: userPrompt                           # latest user-role prompt slot
+        input: userPrompt
     - id: hallucination
       inputs:
-        context: context                            # use the canonical context field for this metric
+        context: context
 ```
 
 Available canonical fields: `input`, `output`, `context`,
 `systemInstruction`, `model`, `userPrompt` (latest user-role prompt slot, extracted from
-`gen_ai.prompt.N.role == "user"`). When the requested field is empty on a
-given span, the slot falls back to `span.input` / `span.output` /
-`span.context` so a single misconfiguration doesn't drop spans. `context` has
-no built-in default span attribute; if a span does not provide it, evaluator
-context is omitted unless you explicitly route `inputs.context` elsewhere.
+`gen_ai.prompt.N.role == "user"`). `context` has no built-in default span
+attribute — if a span does not provide it, evaluator context is omitted unless
+you explicitly route `inputs.context` elsewhere.
 
 ### Full example
 
@@ -470,23 +469,17 @@ scope:
   sampling:
     strategy: latest
     count: 50
-  # Map custom span attributes to canonical fields. Defaults handle OTel
-  # GenAI semconv + OpenLLMetry; override only what you need.
   spanFields:
-    context: span.context              # can point to any span field the user wants as evaluator context, e.g. RAG context or system prompt
+    context: span.context
     output: [gen_ai.output.message, gen_ai.output.messages]
     # input, systemInstruction, model use built-in defaults
 
 metrics:
   enabled:
-    # Plain string form — uses span.input / span.output / span.context
     - faithfulness
     - relevance
     - hallucination
     - answer-completeness
-    # Object form — overrides which canonical span field feeds the
-    # evaluator's `input` slot. user-frustration scores the user's turn
-    # alone instead of the full joined transcript.
     - id: user-frustration
       inputs:
         input: userPrompt
@@ -521,10 +514,9 @@ OPENAI_BASE_URL=https://your-gateway.example.com/v1
 ANTHROPIC_API_KEY=sk-ant-...
 ANTHROPIC_BASE_URL=https://your-proxy.example.com
 
-# Gemini Developer API
+# Google Gemini Enterprise Platform (Vertex AI)
 GOOGLE_API_KEY=...
-
-# Vertex AI — authenticates via Workload Identity / Application Default Credentials (no API key).
+# Or authenticate via Workload Identity / Application Default Credentials instead of an API key.
 # Set the target project and region (or judge.project / judge.location in config):
 GOOGLE_CLOUD_PROJECT=my-gcp-project
 GOOGLE_CLOUD_LOCATION=global
@@ -559,23 +551,24 @@ Drift results are written back as the same event type with `gen_ai.evaluation.ty
 
 ## Built-in Evaluators
 
-`dt-evals` ships with 13 built-in LLM judge evaluators, plus drift detection as a separate statistical metric.
+`dt-evals` ships with 14 built-in LLM judge evaluators, plus drift detection as a separate statistical metric.
 
-| Evaluator | Measures | Required fields |
-|-----------|----------|-----------------|
-| `toxicity` | Harmful, offensive, or unsafe output | `input`, `output` |
-| `faithfulness` | Whether the answer is grounded in provided context | `input`, `output`, `context` |
-| `hallucination` | Unsupported or fabricated claims | `input`, `output`, `context` |
-| `pii-leakage` | Personally identifiable information in the answer | `input`, `output` |
-| `relevance` | Whether the answer addresses the user request | `input`, `output` |
-| `factual-accuracy` | Accuracy against a reference answer | `input`, `output`, `expectedOutput` |
-| `user-frustration` | Whether the user was left frustrated at the end of the conversation | `input` |
-| `context-relevance` | Retrieval quality for supplied context | `input`, `context` |
+| Evaluator | Measures | Fields used |
+|-----------|----------|-------------|
 | `answer-completeness` | Whether all parts of the request were answered | `input`, `output` |
-| `prompt-injection` | Prompt injection attempts in the input | `input`, `output` |
 | `bias` | Harmful bias or unfair framing | `input`, `output` |
-| `summarization-quality` | Summary faithfulness, coverage, and conciseness | `input`, `output` |
 | `conciseness` | Whether the answer avoids filler and unnecessary padding | `input`, `output` |
+| `context-relevance` | Retrieval quality for supplied context | `input` |
+| `factual-accuracy` | Accuracy using world knowledge | `input`, `output` |
+| `faithfulness` | Whether the answer is grounded in provided context | `input`, `output` |
+| `fluency` | Grammar, clarity, and natural language quality | `input`, `output` |
+| `hallucination` | Unsupported or fabricated claims | `input`, `output` |
+| `pii-leakage` | Personally identifiable information in the answer | `input`, `output` |
+| `prompt-injection` | Prompt injection attempts in the input | `input` |
+| `relevance` | Whether the answer addresses the user request | `input`, `output` |
+| `summarization-quality` | Summary faithfulness, coverage, and conciseness | `input`, `output` |
+| `toxicity` | Harmful, offensive, or unsafe output | `output` |
+| `user-frustration` | Frustration signals in the user's message | `input` |
 
 ### Custom evaluators
 
@@ -627,104 +620,7 @@ Use it when you care about regressions that show up gradually, not just single-r
 
 ## TypeScript Library
 
-The repository includes `dt-eval-lib` for programmatic usage.
-
-### Basic example
-
-```ts
-import { evaluate, BuiltInMetric } from "@dynatrace-oss/dt-eval-lib";
-
-const result = await evaluate(
-  BuiltInMetric.Faithfulness,
-  {
-    input: "Can I cancel my booking after check-in?",
-    output: "Yes, you can cancel any time and get a full refund.",
-    context: "Bookings can be canceled up to 24 hours before check-in. Refunds are not available after check-in.",
-  },
-  {
-    provider: {
-      provider: "openai",
-      apiKey: process.env.OPENAI_API_KEY,
-      model: "gpt-4.1",
-      timeout: 30000,
-      maxRetries: 2,
-    },
-  },
-);
-
-console.log(result.score);
-console.log(result.explanation.summary);
-console.log(result.explanation.reasoning);
-```
-
-### Inspect the evaluator catalog
-
-```ts
-import { listPrompts, getPrompt, BuiltInMetric } from "@dynatrace-oss/dt-eval-lib";
-
-const prompts = listPrompts();
-const relevance = getPrompt(BuiltInMetric.Relevance);
-
-console.log(prompts.map((prompt) => prompt.id));
-console.log(relevance.requiredFields);
-```
-
-### Override thresholds in code
-
-```ts
-import { evaluate, BuiltInMetric } from "@dynatrace-oss/dt-eval-lib";
-
-const result = await evaluate(
-  BuiltInMetric.Relevance,
-  {
-    input: "What are your support hours?",
-    output: "Our support team is available on weekdays.",
-  },
-  {
-    provider: {
-      provider: "anthropic",
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    },
-    scoring: {
-      thresholdOverride: 0.8,
-    },
-  },
-);
-
-console.log(result.score.label);
-```
-
-### Use a custom gateway or proxy
-
-```ts
-import { evaluate, BuiltInMetric } from "@dynatrace-oss/dt-eval-lib";
-
-await evaluate(
-  BuiltInMetric.Toxicity,
-  {
-    input: "Write a release note",
-    output: "The release fixes several issues.",
-  },
-  {
-    provider: {
-      provider: "openai",
-      apiKey: process.env.OPENAI_API_KEY,
-      baseUrl: process.env.OPENAI_BASE_URL,
-    },
-  },
-);
-```
-
-Library features:
-
-- OpenAI, Anthropic, Google Vertex AI, and Gemini providers
-- Structured judge responses with score, summary, and reasoning
-- Built-in prompt catalog via `BuiltInMetric`, `listPrompts()`, and `getPrompt()`
-- Custom evaluator support by passing your own `PromptDefinition`
-- Binary, continuous, and Likert scoring scales
-- Threshold overrides per evaluation call
-- Retry handling for transient provider failures
-- Composable API that can be embedded in external eval and observability workflows
+The repository also includes [`dt-eval-lib`](../dt-eval-lib/README.md) — a standalone TypeScript package for running the same judge-based metrics directly in code, tests, and CI pipelines without the CLI. It supports all six providers and the full built-in evaluator catalog.
 
 ## PII Handling
 
@@ -739,16 +635,25 @@ The original values are not sent to the judge by the CLI path.
 
 ## Data Expectations
 
-The CLI currently expects chat-style GenAI spans that include fields such as:
+The CLI reads OTel GenAI semconv fields by default:
 
-- `gen_ai.provider.name`
-- `gen_ai.request.model`
-- `gen_ai.prompt.<n>.content`
-- `gen_ai.prompt.<n>.role`
-- `gen_ai.completion.0.content`
-- `service.name` or `dt.entity.service` for service scoping
+| Canonical field | Default attributes read |
+|----------------|------------------------|
+| `input` | `gen_ai.input.messages` |
+| `output` | `gen_ai.output.message`, `gen_ai.output.messages` |
+| `model` | `gen_ai.request.model` |
+| `systemInstruction` | `gen_ai.system_instruction` |
 
-This makes it a good fit for apps instrumented with OpenTelemetry GenAI conventions or OpenLLMetry-style span attributes.
+This makes the CLI a good fit for apps instrumented with OpenTelemetry
+GenAI conventions. For other tracing schemas — including OpenInference —
+use `scope.spanFields` to map their attributes to the canonical fields
+above. OpenInference commonly uses attributes such as
+`llm.input_messages`, `llm.output_messages`, `input.value`,
+`output.value`, and `llm.model_name`. A small set of legacy fallback attributes
+(`gen_ai.prompt.<n>.content/role`, `gen_ai.completion.0.content`) is also
+probed for compatibility with older emitters. See
+[`dynatrace-ai-agent-instrumentation-examples`](https://github.com/dynatrace-oss/dynatrace-ai-agent-instrumentation-examples)
+for example instrumentations.
 
 ## Local Development
 
@@ -756,10 +661,7 @@ This makes it a good fit for apps instrumented with OpenTelemetry GenAI conventi
 # from the repo root — install all workspace dependencies
 npm install
 
-# build the library
 npm run build --workspace=dt-eval-lib
-
-# build the CLI
 npm run build --workspace=dt-eval-cli
 ```
 

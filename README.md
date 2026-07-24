@@ -35,7 +35,7 @@ End-to-end LLM evaluation toolkit for Dynatrace AI Observability.
 - Python `>=3.10` (dt-ai-ingest)
 - A Dynatrace environment with GenAI spans (`gen_ai.*` OTEL attributes)
 - A Dynatrace platform token (generated at [myaccount.dynatrace.com/platformTokens](https://myaccount.dynatrace.com/platformTokens) — `dt-evals doctor` walks you through it)
-- Credentials for your judge provider (OpenAI, Anthropic, Google, AWS Bedrock, or Azure OpenAI)
+- Credentials for your judge provider (OpenAI, Anthropic, Google Gemini Enterprise Platform (Vertex AI), AWS Bedrock, or Azure OpenAI)
 
 ## Install
 
@@ -169,6 +169,7 @@ dt-evals run --since 2h --sample 20 --concurrency 8 --debug
 | `--concurrency <n>` | Number of parallel evaluation workers |
 | `--debug` | Per-step timing logs |
 | `--config <path>` | Path to a specific config file |
+| `--store-evaluated-prompt` | Include the evaluated prompt/response in bizevents written to Dynatrace (overrides `storeEvaluatedPrompt` in config; default: false) |
 
 **GitHub Actions example:**
 
@@ -314,7 +315,7 @@ DT_API_TOKEN=dt0c01.xxxxx
 
 ## Built-in Evaluators
 
-13 built-in LLM judge evaluators plus statistical drift detection.
+14 built-in LLM judge evaluators plus statistical drift detection.
 
 | Evaluator | Measures |
 |-----------|----------|
@@ -340,14 +341,13 @@ DT_API_TOKEN=dt0c01.xxxxx
 
 | Provider | Default model | Notes |
 |----------|--------------|-------|
-| `openai` | `gpt-5.4` | `OPENAI_API_KEY` |
-| `anthropic` | `claude-sonnet-4-7` | `ANTHROPIC_API_KEY` |
-| `vertex` | `gemini-3-pro` | Workload Identity / ADC by default — set `judge.project` + `judge.location` (or `GOOGLE_CLOUD_PROJECT` + `GOOGLE_CLOUD_LOCATION`). No `GOOGLE_API_KEY` required. |
-| `gemini` | `gemini-3.1-flash-live` | `GOOGLE_API_KEY` |
-| `bedrock` | `anthropic.claude-opus-4-7` | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` |
+| `openai` | `gpt-5-mini` | `OPENAI_API_KEY` |
+| `anthropic` | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
+| `vertex`, `gemini` | `gemini-3.1-flash-lite` | Google Gemini Enterprise Platform (Vertex AI) — use ADC by default with `vertex` and set `judge.project` + `judge.location` (or `GOOGLE_CLOUD_PROJECT` + `GOOGLE_CLOUD_LOCATION`); use `GOOGLE_API_KEY` with `gemini`. |
+| `bedrock` | `us.anthropic.claude-haiku-4-5-20251001-v1:0` | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` |
 | `azure-openai` | user-provided deployment name | `AZURE_OPENAI_API_KEY` + `AZURE_OPENAI_ENDPOINT` + `AZURE_OPENAI_API_VERSION` |
 
-Override the model with `--model <id>` or set `judge.model` in config.
+Override the model with `--model <id>` or set `judge.model` in config. See `dt-eval-cli/src/config/defaults.ts` for current defaults.
 
 ---
 
@@ -361,7 +361,6 @@ name: travel-assistant-prod
 
 dynatrace:
   environmentUrl: https://your-env.live.dynatrace.com
-  apiToken: dt0c01.xxxxx
 
 judge:
   provider: openai
@@ -397,9 +396,7 @@ judge:
   provider: bedrock
   model: us.anthropic.claude-3-5-haiku-20241022-v1:0
   region: us-east-1
-  # or use AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY env vars
-  apiKey: <AWS_ACCESS_KEY_ID>
-  secretKey: <AWS_SECRET_ACCESS_KEY>
+  # credentials via AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY env vars, IAM role, or SSO
 ```
 
 **Azure OpenAI example:**
@@ -426,9 +423,9 @@ JUDGE_MODEL=gpt-4.1
 OPENAI_API_KEY=sk-...
 # Anthropic
 ANTHROPIC_API_KEY=sk-ant-...
-# Google Gemini Developer API
+# Google Gemini Enterprise Platform (Vertex AI)
 GOOGLE_API_KEY=...
-# Google Vertex AI — uses Workload Identity / Application Default Credentials (no API key)
+# Or use Workload Identity / Application Default Credentials instead of an API key
 GOOGLE_CLOUD_PROJECT=my-gcp-project
 GOOGLE_CLOUD_LOCATION=global
 # AWS Bedrock

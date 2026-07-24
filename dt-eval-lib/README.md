@@ -13,6 +13,15 @@ Minimal TypeScript library for running LLM-as-a-judge evaluations.
 npm install @dynatrace-oss/dt-eval-lib
 ```
 
+Then install the peer dependency for your provider:
+
+| Provider | Peer dependency |
+|----------|-----------------|
+| `openai`, `azure-openai` | `npm install openai` |
+| `anthropic` | `npm install @anthropic-ai/sdk` |
+| `vertex`, `gemini` | `npm install @google/genai` |
+| `bedrock` | `npm install @aws-sdk/client-bedrock-runtime` |
+
 ## Build
 
 ```bash
@@ -50,103 +59,90 @@ console.log(result.explanation); // { summary: "...", reasoning: "..." }
 
 ## Available Metrics
 
-| Metric | Enum | Type | Required Fields |
-|--------|------|------|-----------------|
-| `toxicity` | `BuiltInMetric.Toxicity` | binary | input, output |
-| `faithfulness` | `BuiltInMetric.Faithfulness` | continuous | input, output, context |
-| `hallucination` | `BuiltInMetric.Hallucination` | binary | input, output, context |
-| `pii-leakage` | `BuiltInMetric.PiiLeakage` | binary | input, output |
-| `relevance` | `BuiltInMetric.Relevance` | continuous | input, output |
-| `factual-accuracy` | `BuiltInMetric.FactualAccuracy` | continuous | input, output, expectedOutput |
-| `user-frustration` | `BuiltInMetric.UserFrustration` | binary | input |
-| `context-relevance` | `BuiltInMetric.ContextRelevance` | continuous | input, context |
-| `answer-completeness` | `BuiltInMetric.AnswerCompleteness` | continuous | input, output |
-| `prompt-injection` | `BuiltInMetric.PromptInjection` | binary | input, output |
-| `bias` | `BuiltInMetric.Bias` | binary | input, output |
-| `summarization-quality` | `BuiltInMetric.SummarizationQuality` | continuous | input, output |
-| `conciseness` | `BuiltInMetric.Conciseness` | continuous | input, output |
+All built-in metrics return a **continuous** score in `[0.0, 1.0]`. The score is labeled `"pass"` when `value >= threshold` and `"fail"` otherwise. Every built-in metric defaults to `threshold: 0.5` — override it per-call via `EvalConfig.scoring.thresholdOverride`. Source of truth: [`src/prompts/catalog-data.ts`](src/prompts/catalog-data.ts).
 
-> **Note:** The "Required Fields" column lists the `EvalInput` property names you pass to `evaluate()`.
+| Metric | Enum | Score range | Fields used from `EvalInput` |
+|--------|------|-------------|-------------------------------|
+| `answer-completeness` | `BuiltInMetric.AnswerCompleteness` | 0.0 – 1.0 | `input`, `output` |
+| `bias` | `BuiltInMetric.Bias` | 0.0 – 1.0 | `input`, `output` |
+| `conciseness` | `BuiltInMetric.Conciseness` | 0.0 – 1.0 | `input`, `output` |
+| `context-relevance` | `BuiltInMetric.ContextRelevance` | 0.0 – 1.0 | `input` |
+| `factual-accuracy` | `BuiltInMetric.FactualAccuracy` | 0.0 – 1.0 | `input`, `output` |
+| `faithfulness` | `BuiltInMetric.Faithfulness` | 0.0 – 1.0 | `input`, `output` |
+| `fluency` | `BuiltInMetric.Fluency` | 0.0 – 1.0 | `input`, `output` |
+| `hallucination` | `BuiltInMetric.Hallucination` | 0.0 – 1.0 | `input`, `output` |
+| `pii-leakage` | `BuiltInMetric.PiiLeakage` | 0.0 – 1.0 | `input`, `output` |
+| `prompt-injection` | `BuiltInMetric.PromptInjection` | 0.0 – 1.0 | `input` |
+| `relevance` | `BuiltInMetric.Relevance` | 0.0 – 1.0 | `input`, `output` |
+| `summarization-quality` | `BuiltInMetric.SummarizationQuality` | 0.0 – 1.0 | `input`, `output` |
+| `toxicity` | `BuiltInMetric.Toxicity` | 0.0 – 1.0 | `output` |
+| `user-frustration` | `BuiltInMetric.UserFrustration` | 0.0 – 1.0 | `input` |
+
+> **Note:** The "Fields used" column lists which fields the metric prompt actually reads. `EvalInput.output` is required at the TypeScript type level for all calls — pass `output: ""` for metrics that only use `input`.
 
 ## Providers
 
-Supports **OpenAI**, **Anthropic**, **Vertex AI**, and **Gemini Developer API**. Configure via API key in code or environment variables.
+Supports **OpenAI**, **Anthropic**, **Azure OpenAI**, **Google Gemini Enterprise Platform (Vertex AI)**, and **Amazon Bedrock**. Configure via explicit options in code or environment variables.
 
 ### Environment Variables
 
 ```bash
 # OpenAI
-export OPENAI_API_KEY="sk-..."
-export OPENAI_BASE_URL="https://your-proxy.example.com/v1"  # optional
+OPENAI_API_KEY=sk-...
+OPENAI_BASE_URL=https://your-proxy.example.com/v1  # optional
 
 # Anthropic
-export ANTHROPIC_API_KEY="sk-ant-..."
-export ANTHROPIC_BASE_URL="https://your-proxy.example.com"  # optional
-
-# Google AI (Vertex AI & Gemini) — API key
-export GOOGLE_API_KEY="AIza..."
-```
-
-Or use a `.env` file (not committed to git):
-
-```bash
-OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
-OPENAI_BASE_URL=https://your-proxy.example.com/v1
-ANTHROPIC_BASE_URL=https://your-proxy.example.com
+ANTHROPIC_BASE_URL=https://your-proxy.example.com  # optional
+
+# Azure OpenAI (all three required)
+AZURE_OPENAI_API_KEY=...
+AZURE_OPENAI_ENDPOINT=https://<resource>.openai.azure.com
+AZURE_OPENAI_API_VERSION=2024-02-01
+
+# Google Gemini Enterprise Platform (Vertex AI) — ADC path (no API key needed)
+GOOGLE_CLOUD_PROJECT=my-gcp-project
+GOOGLE_CLOUD_LOCATION=us-central1  # optional, defaults to "global"
+
+# Google Gemini Enterprise Platform (Vertex AI) — API key path
 GOOGLE_API_KEY=AIza...
+
+# Amazon Bedrock — static credentials (optional if using IAM roles / SSO)
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=...
+AWS_DEFAULT_REGION=us-east-1  # optional, defaults to "us-east-1"
 ```
 
-### Vertex AI Setup
+Config is resolved in this order for each option:
 
-1. Get an API key from [Google Cloud Console](https://console.cloud.google.com/apis/credentials) (Vertex AI Express Mode)
-2. Set `GOOGLE_API_KEY` env var (or pass `apiKey` in provider config)
+1. Explicit value in `provider` options
+2. Environment variable
+
+### Google Gemini Enterprise Platform (Vertex AI) Setup
+
+Use Application Default Credentials (ADC) with provider ID `vertex` when running on GKE or Cloud Run with Workload Identity, or pass `apiKey` with provider ID `gemini` for key-based auth.
+
+### Azure OpenAI Setup
+
+All four fields are required — `model` is your Azure deployment name, which is user-defined and has no default.
 
 ```ts
 await evaluate(BuiltInMetric.Toxicity, input, {
   provider: {
-    provider: "vertex",
-    apiKey: "AQ...",
+    provider: "azure-openai",
+    apiKey: "...",                                    // or AZURE_OPENAI_API_KEY
+    baseUrl: "https://<resource>.openai.azure.com",  // or AZURE_OPENAI_ENDPOINT
+    apiVersion: "2024-02-01",                         // or AZURE_OPENAI_API_VERSION
+    model: "my-gpt4-deployment",                      // your deployment name
   },
 });
 ```
 
-### Gemini Developer API Setup
+### Amazon Bedrock Setup
 
-1. Get an API key from [Google AI Studio](https://aistudio.google.com/apikey)
-2. Set `GOOGLE_API_KEY` env var (or pass `apiKey` in provider config)
+Uses the AWS SDK credential chain — IAM roles, SSO, and `AWS_PROFILE` are all resolved automatically. Static credentials are only needed if you can't use role-based auth.
 
-```ts
-await evaluate(BuiltInMetric.Toxicity, input, {
-  provider: {
-    provider: "gemini",
-    apiKey: "AIza...",
-  },
-});
-```
-
-> **Note:** Both `vertex` and `gemini` use the `@google/genai` SDK and require Node.js ≥ 20.
-
-When calling `evaluate()`, the library resolves config in this order:
-
-1. Explicit value in `provider` options (e.g., `provider.apiKey`, `provider.baseUrl`)
-2. Environment variable (`OPENAI_API_KEY`, `OPENAI_BASE_URL`, etc.)
-
-```ts
-// Option 1: explicit config
-await evaluate(BuiltInMetric.Toxicity, input, {
-  provider: {
-    provider: "openai",
-    apiKey: "sk-...",
-    baseUrl: "https://your-proxy.example.com/v1",
-  },
-});
-
-// Option 2: env vars (no apiKey/baseUrl needed)
-await evaluate(BuiltInMetric.Toxicity, input, {
-  provider: { provider: "openai" },
-});
-```
+> **Note:** Google provider IDs `vertex` and `gemini` both use the `@google/genai` SDK; `azure-openai` and `openai` both use the `openai` SDK.
 
 ## Metric Identification
 
@@ -164,35 +160,35 @@ Use `listPrompts()` and `getPrompt()` to discover available metrics:
 ```ts
 import { listPrompts, getPrompt, BuiltInMetric } from "@dynatrace-oss/dt-eval-lib";
 
-const all = listPrompts();                        // all 13 built-in metrics
+const all = listPrompts();                        // all 14 built-in metrics
 const tox = getPrompt(BuiltInMetric.Toxicity);    // single metric by ID
 ```
 
 ## Configuration
 
 ```ts
-import type { EvalConfig } from "@dynatrace-oss/dt-eval-lib";
+import type { EvalConfig, EvalInput } from "@dynatrace-oss/dt-eval-lib";
 
+// What you pass to evaluate()
+const input: EvalInput = {
+  input: "What is the capital of France?",    // required — the user query
+  output: "The capital of France is Paris.",  // required — the LLM response to evaluate
+  context: "...",                              // optional — retrieved documents (RAG)
+  expectedOutput: "...",                       // optional — reference answer
+};
+
+// How to run the evaluation
 const config: EvalConfig = {
   provider: {
-    provider: "openai",          // "openai" | "anthropic" | "vertex" | "gemini"
-    apiKey: "sk-...",            // optional if env var is set
-    baseUrl: "https://...",      // optional (openai/anthropic only)
-    model: "gpt-4.1",           // optional — defaults to gpt-4.1 / claude-sonnet-4-6 / gemini-2.5-pro (vertex) / gemini-2.5-flash (gemini)
-    timeout: 30000,              // optional — request timeout in ms (default 30000)
-    maxRetries: 2,               // optional — retries on transient errors (default 2)
+    provider: "openai",  // "openai" | "anthropic" | "azure-openai" | "vertex" | "gemini" | "bedrock"
+    apiKey: "sk-...",    // optional if env var is set
+    baseUrl: "https://", // optional — openai and anthropic only
+    model: "...",        // optional — see src/engine/providers/index.ts for per-provider defaults
+    timeout: 30000,      // optional — request timeout in ms (default: 30000)
+    maxRetries: 2,       // optional — retries on transient errors (default: 2)
   },
   scoring: {
-    thresholdOverride: 0.8,      // optional — override the metric's default threshold
+    thresholdOverride: 0.8, // optional — override the metric's pass threshold (default: 0.5)
   },
 };
-```
-
-## Threshold Override
-
-```ts
-const result = await evaluate(BuiltInMetric.Relevance, input, {
-  provider: { provider: "openai", apiKey: "sk-..." },
-  scoring: { thresholdOverride: 0.8 }, // stricter than default 0.5
-});
 ```
