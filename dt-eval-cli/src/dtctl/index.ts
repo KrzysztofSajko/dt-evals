@@ -309,14 +309,18 @@ export function liveSubdomain(url: string): string {
 }
 
 export async function checkBizeventPermission(environmentUrl: string, bearerToken: string): Promise<PermissionCheck> {
-  const isClassic = /\.apps\.dynatrace\.com(\/|$)/i.test(environmentUrl);
+  // Any `.apps.` platform host (production or labs) is rewritten to the classic
+  // env-api by liveSubdomain(); those posts require `storage:events:write`.
+  // Deriving it from the rewrite keeps the two in sync as host families grow.
+  const normalizedUrl = environmentUrl.replace(/\/$/, '');
+  const isClassic = liveSubdomain(normalizedUrl) !== normalizedUrl;
   const scope = isClassic ? 'storage:events:write' : 'openpipeline:bizevents:ingest';
   const label = isClassic
     ? 'Bizevent write (storage:events:write)'
     : 'Bizevent write (openpipeline:bizevents:ingest)';
 
   // Probe the same URL the runtime client posts to.
-  const url = `${liveSubdomain(environmentUrl.replace(/\/$/, ''))}/api/v2/bizevents/ingest`;
+  const url = `${liveSubdomain(normalizedUrl)}/api/v2/bizevents/ingest`;
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -356,7 +360,9 @@ export async function createPlatformToken(
   name: string,
   scopes: string[],
 ): Promise<PlatformToken> {
-  const url = `${environmentUrl.replace(/\/$/, '')}/api/v2/apiTokens`;
+  // Classic env-api endpoint — route through liveSubdomain() so `.apps.` hosts
+  // (prod and labs) reach the env-api host, not the apps gateway.
+  const url = `${liveSubdomain(environmentUrl.replace(/\/$/, ''))}/api/v2/apiTokens`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { Authorization: authScheme(bearerToken), 'Content-Type': 'application/json' },
