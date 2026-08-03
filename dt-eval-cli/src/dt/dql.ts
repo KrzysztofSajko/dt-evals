@@ -1,6 +1,7 @@
 import type { GenAiSpan } from './types.js';
 import type { SpanFieldsMap } from '../config/schema.js';
 import { toCandidateList } from '../config/schema.js';
+import { DEFAULT_OPERATION_NAMES } from '../config/defaults.js';
 
 export interface DqlQueryOptions {
   app?: string;     // service/app name to filter spans
@@ -9,6 +10,8 @@ export interface DqlQueryOptions {
   errorsOnly?: boolean;
   /** Custom span attribute candidates. Tried before built-in defaults. */
   spanFields?: SpanFieldsMap;
+  /** GenAI operation names to keep. Empty array disables this filter. */
+  operationNames?: string[];
 }
 
 export type DqlResult = GenAiSpan[];
@@ -49,8 +52,33 @@ function resolveFields(spanFields: SpanFieldsMap | undefined): ResolvedFields {
   };
 }
 
+function dqlStringLiteral(value: string): string {
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+/**
+ * Resolve the effective operation-name keep-list, applying the default when unset and
+ * trimming each entry so a stray-whitespace config value (e.g. `" chat "`) still matches
+ * the untrimmed operation name on real spans, in both the DQL filter and the parser net.
+ */
+export function resolveOperationNames(operationNames?: string[]): string[] {
+  return (operationNames ?? DEFAULT_OPERATION_NAMES).map(name => name.trim());
+}
+
+/**
+ * Parser-side safety net mirroring the DQL operation-name filter: keep only spans
+ * whose gen_ai.operation.name is in the keep-list. An empty list disables the filter.
+ */
+export function filterSpansByOperationName(spans: GenAiSpan[], operationNames?: string[]): GenAiSpan[] {
+  const keep = resolveOperationNames(operationNames);
+  if (keep.length === 0) return spans;
+  const keepSet = new Set(keep);
+  return spans.filter(span => span.operationName !== undefined && keepSet.has(span.operationName));
+}
+
 export function buildGenAiSpanQuery(opts: DqlQueryOptions): string {
   const { app, since, limit = 1000, errorsOnly = false, spanFields } = opts;
+  const operationNames = resolveOperationNames(opts.operationNames);
   const fields = resolveFields(spanFields);
 
   // Use explicit from:/to: timeframe — a filter alone leaves Grail's default
@@ -59,6 +87,11 @@ export function buildGenAiSpanQuery(opts: DqlQueryOptions): string {
 
   // Support both OTel GenAI semconv (gen_ai.system) and OpenLLMetry (gen_ai.provider.name)
   lines.push('| filter isNotNull(gen_ai.system) or isNotNull(gen_ai.provider.name)');
+
+  if (operationNames.length > 0) {
+    const names = operationNames.map(dqlStringLiteral).join(', ');
+    lines.push(`| filter in(gen_ai.operation.name, array(${names}))`);
+  }
 
   if (app) {
     // Match by either service.name (OTel GenAI semconv) or dt.service.name
@@ -94,6 +127,7 @@ export function buildGenAiSpanQuery(opts: DqlQueryOptions): string {
     'start_time',
     'end_time',
     'status.code',
+    'gen_ai.operation.name',
     'gen_ai.system',
     'gen_ai.provider.name',
     ...fields.input,
@@ -270,6 +304,7 @@ export function parseSpanResults(
       userPrompt,
       // gen_ai.system (OTel) or gen_ai.provider.name (OpenLLMetry)
       system: asString(r['gen_ai.system']) ?? asString(r['gen_ai.provider.name']),
+      operationName: asString(r['gen_ai.operation.name']),
       requestModel: pickFirstMatch(r, fields.model)?.value,
       isError: statusCode === 'ERROR' || undefined,
     });
