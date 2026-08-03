@@ -79,6 +79,30 @@ describe('processBatch', () => {
     expect(maxConcurrent).toBeLessThanOrEqual(3);
   });
 
+  it('starts new work as soon as a worker becomes available', async () => {
+    let releaseFirst!: () => void;
+    const firstBlocked = new Promise<void>(resolve => {
+      releaseFirst = resolve;
+    });
+    const started: number[] = [];
+
+    const run = processBatch(
+      [1, 2, 3],
+      async n => {
+        started.push(n);
+        if (n === 1) await firstBlocked;
+        return n;
+      },
+      { concurrency: 2 },
+    );
+
+    await vi.waitFor(() => expect(started).toEqual([1, 2, 3]));
+    releaseFirst();
+
+    const results = await run;
+    expect(results.map(r => r.result)).toEqual([1, 2, 3]);
+  });
+
   it('handles non-Error thrown values by wrapping them in Error', async () => {
     const items = [1];
     const handler = async (_n: number) => {
@@ -107,4 +131,12 @@ describe('processBatch', () => {
     await processBatch(items, handler);
     expect(maxConcurrent).toBeLessThanOrEqual(5);
   });
+
+  it.each([0, -1, 2.5, NaN])(
+    "rejects invalid concurrency: %s",
+    async invalid => {
+      await expect(processBatch([1], async n => n, { concurrency: invalid }))
+        .rejects.toThrow("concurrency must be a positive integer");
+    },
+  );
 });
