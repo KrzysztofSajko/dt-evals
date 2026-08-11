@@ -1,0 +1,68 @@
+---
+name: CI — E2E suite (no credentials)
+
+# PR-time gate for test/e2e — the credentialed suite only runs weekly.
+# Spends nothing: typechecks the workspace and runs whatever needs no
+# credentials, invoked whole so new tests are covered automatically.
+on:
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    paths:
+      - "test/e2e/**"
+      - ".github/workflows/e2e-pr-checks.yml"
+      - "dt-eval-cli/**"
+      # dt-eval-cli only consumes dt-eval-lib via its pinned npm version, so a
+      # lib-only PR needs the source-build override below to get feedback here.
+      - "dt-eval-lib/**"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    name: Typecheck & credential-free tests
+    defaults:
+      run:
+        shell: bash
+        working-directory: test/e2e
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
+        with:
+          node-version-file: "dt-eval-cli/.nvmrc"
+          cache: "npm"
+          cache-dependency-path: |
+            dt-eval-cli/package-lock.json
+            dt-eval-lib/package-lock.json
+            test/e2e/package-lock.json
+
+      - name: Build dt-eval-lib from source
+        working-directory: dt-eval-lib
+        run: |
+          npm ci
+          npm run build
+
+      # npm install after npm ci overrides the registry-pinned dt-eval-lib
+      # with the just-built local one, for this job only (never committed).
+      - name: Build the CLI under test
+        working-directory: dt-eval-cli
+        run: |
+          npm ci
+          npm install ../dt-eval-lib
+          npm run build
+
+      - name: Install E2E dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run everything that needs no credentials
+        run: npx vitest run

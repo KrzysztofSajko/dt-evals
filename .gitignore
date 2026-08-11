@@ -3,5 +3,23 @@ dist/
 *.tsbuildinfo
 .env
 .env.*
+# ...but the committed templates that document which variables to set are not secrets.
+!.env.sample
+!.env.example
+# direnv holds the same exports as .env, but `.env.*` needs a literal dot after
+# "env" so it does not match.
+.envrc
+.envrc.local
 eval.md
+
+# Local eval config written by `dt-evals configure` in the working directory.
+# It carries a live tenant API token, so it must never be committed. Matches the
+# exact filename at any depth — the tracked examples
+# (dt-eval-cli/example.dt-eval.yaml, evals/*.dt-eval.yaml) are deliberately unaffected.
+.dt-eval.yaml
+
+# Captured test output. CI no longer writes one, but reproducing a run locally
+# with `| tee` is a natural thing to do, and the CLI echoes raw provider and
+# tenant error bodies.
+*.log
 
