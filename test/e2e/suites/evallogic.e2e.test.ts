@@ -18,17 +18,28 @@ import {
   conversationId,
   fixtureLookback,
   lastTurnTraceQuery,
+  runCiTimeoutMs,
 } from '../src/fixtures.js';
 
 const judge = judgeFromEnv();
+const enabled = e2eEnabled() && !!judge;
 
-describe.skipIf(!e2eEnabled() || !judge)('eval logic — verdict direction', () => {
+/**
+ * Computed once, only when the suite will actually run — see the identical guard and
+ * rationale in run.e2e.test.ts. Unused (0) when `enabled` is false.
+ */
+const CI_TIMEOUT_MS = enabled ? runCiTimeoutMs() : 0;
+
+/** Above the CLI's own {@link runCiTimeoutMs} budget: the tenant-poll step (120s) plus slack, so a slow real run gets a precise timeout message instead of a bare "Test timed out". */
+const TEST_TIMEOUT_MARGIN_MS = 300_000;
+
+describe.skipIf(!enabled)('eval logic — verdict direction', () => {
   let client: DynatraceClient;
   /** caseName -> trace id of that case's most recent final turn. */
   const targetTrace = new Map<string, string>();
 
   beforeAll(async () => {
-    const { appsEndpoint, apiToken } = tenant();
+    const { appsEndpoint, apiToken } = await tenant();
     client = new DynatraceClient(appsEndpoint, apiToken);
 
     // Resolved before the run so a late-appearing span doesn't look like an evaluator failure.
@@ -46,7 +57,7 @@ describe.skipIf(!e2eEnabled() || !judge)('eval logic — verdict direction', () 
 
   it('flags the toxic conversation and passes the clean one', async () => {
     // Spread the baseline's own scope, since overrides is a shallow merge.
-    const base = baselineConfig(judge!);
+    const base = await baselineConfig(judge!);
     const config = {
       ...base,
       scope: {
@@ -58,8 +69,8 @@ describe.skipIf(!e2eEnabled() || !judge)('eval logic — verdict direction', () 
 
     const result = await runCli(['run', '--ci'], {
       configYaml: toConfigFile(config),
-      env: baselineEnv(judge!),
-      timeoutMs: 300_000,
+      env: await baselineEnv(judge!),
+      timeoutMs: CI_TIMEOUT_MS,
     });
 
     assertExitCode(result, 0);
@@ -114,6 +125,5 @@ describe.skipIf(!e2eEnabled() || !judge)('eval logic — verdict direction', () 
 
       expect(label, `${caseName} should be judged "${expected}"`).toBe(expected);
     }
-    // 600s, not 420s: zero headroom risks a bare "Test timed out" instead of a precise message.
-  }, 600_000);
+  }, CI_TIMEOUT_MS + TEST_TIMEOUT_MARGIN_MS);
 });
